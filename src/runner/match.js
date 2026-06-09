@@ -3,6 +3,7 @@ import path from "node:path";
 import { WarGame, createDraft, summarizeReplay } from "../engine/game.js";
 import { MEDIUM_EARTH_MAP } from "../engine/map.js";
 import { RULES } from "../engine/rules.js";
+import { normalizeSeed } from "../engine/random.js";
 import { BotProcess } from "./bot-process.js";
 import { loadBotManifestById, loadBotManifests } from "./bots.js";
 import { expectedScore, updateElo } from "../rating/elo.js";
@@ -16,7 +17,7 @@ export async function runMatchByIds(botAId, botBId, options = {}) {
 }
 
 export async function runMatch(botManifests, options = {}) {
-  const seed = options.seed ?? Date.now();
+  const seed = normalizeSeed(options.seed ?? Date.now());
   const maxTurns = options.maxTurns ?? RULES.maxTurns;
   const draft = createDraft(seed, MEDIUM_EARTH_MAP);
   const bots = botManifests.map((manifest) => new BotProcess(manifest, { timeLimitMs: options.timeLimitMs }));
@@ -29,7 +30,7 @@ export async function runMatch(botManifests, options = {}) {
         type: "pick",
         protocolVersion: 1,
         playerId,
-        seed,
+        botSeed: botSeed(seed, playerId, "pick"),
         rules: RULES,
         map: publicMap(),
         distribution: draft.distribution,
@@ -48,36 +49,33 @@ export async function runMatch(botManifests, options = {}) {
     });
     game.replay.setup.submittedPicks = pickOrders;
 
+    const pickFailure = firstFatal(failures);
+    if (pickFailure) {
+      finishBotFailure(game, pickFailure, 0);
+    }
+
     while (!game.finished && game.turn <= maxTurns) {
       const turnOrders = [];
       for (let playerId = 0; playerId < 2; playerId += 1) {
+        const failureCount = failures.length;
         const response = await safeRequest(bots[playerId], {
           type: "turn",
           protocolVersion: 1,
           playerId,
-          seed,
+          botSeed: botSeed(seed, playerId, `turn:${game.turn}`),
           turn: game.turn,
           timeLimitMs: options.timeLimitMs ?? RULES.botTimeLimitMs,
           observation: game.buildObservation(playerId)
         }, failures);
+        if (failures.length > failureCount) break;
         turnOrders[playerId] = response?.orders ?? response ?? {};
       }
-      game.runTurn(turnOrders);
       if (failures.some((failure) => failure.fatal)) break;
+      game.runTurn(turnOrders);
     }
 
     if (!game.finished && failures.some((failure) => failure.fatal)) {
-      const firstFatal = failures.find((failure) => failure.fatal);
-      const loser = firstFatal.playerId;
-      game.finished = true;
-      game.result = {
-        winner: 1 - loser,
-        loser,
-        reason: "bot_failure",
-        detail: firstFatal.error,
-        turn: game.turn
-      };
-      game.replay.result = game.result;
+      finishBotFailure(game, firstFatal(failures), game.turn);
     } else if (!game.finished) {
       const finalFrame = game.replay.frames.at(-1);
       game.finished = true;
@@ -204,4 +202,25 @@ function updateRatings(ratings, pair, winnerIndex) {
 
 function sanitizeFileName(name) {
   return name.replace(/[^a-z0-9._-]+/gi, "_");
+}
+
+function botSeed(seed, playerId, phase) {
+  return normalizeSeed(`${seed}:bot:${playerId}:${phase}`);
+}
+
+function firstFatal(failures) {
+  return failures.find((failure) => failure.fatal);
+}
+
+function finishBotFailure(game, failure, turn) {
+  const loser = failure.playerId;
+  game.finished = true;
+  game.result = {
+    winner: 1 - loser,
+    loser,
+    reason: "bot_failure",
+    detail: failure.error,
+    turn
+  };
+  game.replay.result = game.result;
 }

@@ -45,6 +45,31 @@ test("duplicate submitted picks are resolved by cycle allocation order", () => {
   assert.equal(new Set(game.allocation.starts.flat()).size, 6);
 });
 
+test("bot observations do not expose the current first mover", () => {
+  const draft = createDraft(2);
+  const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
+  const game = new WarGame({ seed: 2, draft, pickOrders });
+  const observation = game.buildObservation(0);
+  assert.equal(Object.hasOwn(observation, "firstMovePlayer"), false);
+});
+
+test("deployment events follow cyclic move order", () => {
+  const draft = createDraft(2);
+  const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
+  const game = new WarGame({ seed: 2, draft, pickOrders });
+  assert.equal(game.firstMovePlayer, 1);
+
+  game.runTurn([
+    { deployments: [{ territoryId: game.allocation.starts[0][0], armies: 1 }], orders: [] },
+    { deployments: [{ territoryId: game.allocation.starts[1][0], armies: 1 }], orders: [] }
+  ]);
+
+  const deployPlayers = game.replay.frames
+    .filter((frame) => frame.phase === "deploy")
+    .map((frame) => frame.events[frame.currentEventIndex].playerId);
+  assert.deepEqual(deployPlayers, [1, 0, 0, 1]);
+});
+
 test("deployments happen before attacks and a 3v2 straight-round attack captures", () => {
   const draft = createDraft(2);
   const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];

@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RULES } from "../src/engine/rules.js";
 import { BotProcess } from "../src/runner/bot-process.js";
-import { runMatchByIds } from "../src/runner/match.js";
+import { runMatch, runMatchByIds } from "../src/runner/match.js";
 
 test("default bot request timeout is five seconds", () => {
   assert.equal(RULES.botTimeLimitMs, 5000);
@@ -39,6 +42,63 @@ test("runner max turn safety limit produces a draw", async () => {
   assert.equal(summary.result.loser, null);
   assert.equal(summary.result.reason, "turn_limit_draw");
   assert.equal(summary.result.turn, 1);
+});
+
+test("string-seed matches can be replayed from the numeric summary seed", async () => {
+  const original = await runMatchByIds("starter-random", "starter-greedy", {
+    seed: "string-seed",
+    writeReplay: false,
+    maxTurns: 1,
+    timeLimitMs: 1000
+  });
+  const replayed = await runMatchByIds("starter-random", "starter-greedy", {
+    seed: original.summary.seed,
+    writeReplay: false,
+    maxTurns: 1,
+    timeLimitMs: 1000
+  });
+
+  assert.deepEqual(replayed.replay.setup.submittedPicks, original.replay.setup.submittedPicks);
+  assert.deepEqual(replayed.replay.setup.wastelands, original.replay.setup.wastelands);
+});
+
+test("fatal pick failures finish before any turn is applied", async () => {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "war-bots-"));
+  try {
+    const slowDir = path.join(tempRoot, "slow");
+    const quickDir = path.join(tempRoot, "quick");
+    await mkdir(slowDir);
+    await mkdir(quickDir);
+    await writeFile(path.join(slowDir, "bot.js"), "process.stdin.resume();\n", "utf8");
+    await writeFile(path.join(quickDir, "bot.js"), `
+const { createInterface } = require("node:readline");
+const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+rl.on("line", (line) => {
+  const message = JSON.parse(line);
+  if (message.type === "pick") {
+    process.stdout.write(JSON.stringify({ picks: message.availablePicks.slice(0, 6) }) + "\\n");
+  } else if (message.type === "turn") {
+    process.stdout.write(JSON.stringify({ orders: { deployments: [], orders: [] } }) + "\\n");
+  }
+});
+`, "utf8");
+
+    const { summary, replay } = await runMatch([
+      { id: "slow", name: "Slow", command: process.execPath, args: ["bot.js"], cwd: slowDir },
+      { id: "quick", name: "Quick", command: process.execPath, args: ["bot.js"], cwd: quickDir }
+    ], {
+      seed: 123,
+      writeReplay: false,
+      timeLimitMs: 25
+    });
+
+    assert.equal(summary.result.reason, "bot_failure");
+    assert.equal(summary.result.loser, 0);
+    assert.equal(summary.result.turn, 0);
+    assert.equal(replay.frames.some((frame) => frame.turn > 0 && frame.phase !== "initial"), false);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test("starter greedy prefers capturable territories in bonuses where it already has presence", async () => {

@@ -28,6 +28,7 @@ Create a folder under `bots/` with a `bot.json` file:
 - Invalid game orders are ignored by the engine.
 - Undeployed income is automatically placed on the first owned territory as a fallback, but strong bots should deploy deliberately.
 - Bots never receive the opponent's private code or direct internal state.
+- Use `botSeed` for deterministic bot-side randomness. It is derived from the match seed, player, and request phase; bots do not receive the internal engine seed directly.
 
 ## Picking Phase
 
@@ -57,7 +58,7 @@ Pick request shape:
   "type": "pick",
   "protocolVersion": 1,
   "playerId": 0,
-  "seed": 42,
+  "botSeed": 3819085840,
   "rules": {},
   "map": {
     "id": "medium-earth-traditional",
@@ -101,7 +102,7 @@ Turn request shape:
   "type": "turn",
   "protocolVersion": 1,
   "playerId": 0,
-  "seed": 42,
+  "botSeed": 1238142772,
   "turn": 1,
   "timeLimitMs": 5000,
   "observation": {
@@ -112,7 +113,6 @@ Turn request shape:
       "base": 5,
       "completedBonuses": []
     },
-    "firstMovePlayer": 0,
     "map": {},
     "territories": []
   }
@@ -168,7 +168,7 @@ Rules that matter for order generation:
 
 - One army must stand guard, so a territory with `N` armies can move at most `N - 1`.
 - Multi-attack is off, so armies that capture a territory cannot move again that turn.
-- Move order cycles by turn and alternates order queues during execution.
+- Deployments and attacks/transfers use cyclic move order. The first mover alternates by turn, and within a turn the queues alternate by round.
 - Offensive kill rate is 60%; defensive kill rate is 70%.
 - Luck is 0% with straight rounding.
 - There are no cards.

@@ -6,7 +6,7 @@ let rng = makeRng(1);
 rl.on("line", (line) => {
   const message = JSON.parse(line);
   if (message.type === "pick") {
-    rng = makeRng(`${message.seed}:random:${message.playerId}`);
+    rng = makeRng(`${message.botSeed}:random:${message.playerId}`);
     const picks = shuffle(message.availablePicks ?? [], rng).slice(0, message.requiredPicks ?? 6);
     reply({ picks });
   } else if (message.type === "turn") {

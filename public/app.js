@@ -784,9 +784,9 @@ function seedForAction() {
 }
 
 function generateSeed() {
-  const values = new Uint32Array(2);
+  const values = new Uint32Array(1);
   crypto.getRandomValues(values);
-  return `${Date.now().toString(36)}-${values[0].toString(36)}-${values[1].toString(36)}`;
+  return String(values[0] || 1);
 }
 
 async function fetchJson(url, options = {}) {

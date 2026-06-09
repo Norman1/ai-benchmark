@@ -158,7 +158,6 @@ export class WarGame {
       playerId,
       turn: this.turn,
       income: this.calculateIncome(playerId),
-      firstMovePlayer: this.firstMovePlayer,
       map: publicMapForBots(this.map),
       territories: this.map.territories.map((territory) => {
         const state = this.territories[territory.id];
@@ -192,8 +191,7 @@ export class WarGame {
       this.replay.frames.push(this.#frame(phase, parsed, turnEvents, turnEvents.length - 1));
     };
 
-    this.#applyDeployments(0, parsed[0].deployments, incomes[0].total, turnEvents, pushStepFrame);
-    this.#applyDeployments(1, parsed[1].deployments, incomes[1].total, turnEvents, pushStepFrame);
+    this.#executeDeploymentPhase(parsed, incomes, turnEvents, pushStepFrame);
 
     const movable = this.#initializeMovableArmies();
     const queues = [parsed[0].orders.slice(), parsed[1].orders.slice()];
@@ -257,27 +255,58 @@ export class WarGame {
     }
   }
 
-  #applyDeployments(playerId, deployments, income, events, pushStepFrame) {
+  #executeDeploymentPhase(parsed, incomes, events, pushStepFrame) {
+    const queues = [
+      this.#deploymentQueue(0, parsed[0].deployments, incomes[0].total),
+      this.#deploymentQueue(1, parsed[1].deployments, incomes[1].total)
+    ];
+    let round = 0;
+    while (queues[0].length || queues[1].length) {
+      const order = round % 2 === 0
+        ? [this.firstMovePlayer, 1 - this.firstMovePlayer]
+        : [1 - this.firstMovePlayer, this.firstMovePlayer];
+      for (const playerId of order) {
+        const deployment = queues[playerId].shift();
+        if (!deployment) continue;
+        this.#applyDeployment(playerId, deployment, events, pushStepFrame);
+      }
+      round += 1;
+    }
+  }
+
+  #deploymentQueue(playerId, deployments, income) {
     let remaining = income;
+    const queue = [];
     for (const deployment of deployments) {
       if (remaining <= 0) break;
       const territory = this.territories[deployment.territoryId];
       if (!territory || territory.owner !== playerId) continue;
       const armies = Math.min(remaining, deployment.armies);
       if (armies <= 0) continue;
-      territory.armies += armies;
+      queue.push({ territoryId: deployment.territoryId, armies });
       remaining -= armies;
-      events.push({ type: "deploy", playerId, territoryId: deployment.territoryId, armies });
-      pushStepFrame("deploy");
     }
     if (remaining > 0) {
       const fallback = this.getPlayerTerritories(playerId)[0];
       if (fallback) {
-        this.territories[fallback].armies += remaining;
-        events.push({ type: "deploy", playerId, territoryId: fallback, armies: remaining, fallback: true });
-        pushStepFrame("deploy");
+        queue.push({ territoryId: fallback, armies: remaining, fallback: true });
       }
     }
+    return queue;
+  }
+
+  #applyDeployment(playerId, deployment, events, pushStepFrame) {
+    const territory = this.territories[deployment.territoryId];
+    if (!territory || territory.owner !== playerId || deployment.armies <= 0) return;
+    territory.armies += deployment.armies;
+    events.push({
+      type: "deploy",
+      playerId,
+      territoryId: deployment.territoryId,
+      armies: deployment.armies,
+      fallback: Boolean(deployment.fallback)
+    });
+    pushStepFrame("deploy");
   }
 
   #initializeMovableArmies() {
