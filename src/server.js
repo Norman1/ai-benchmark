@@ -22,7 +22,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/api/match" && req.method === "POST") {
       const body = await readJson(req);
-      const result = await runMatchByIds(body.botA ?? "starter-random", body.botB ?? "starter-greedy", {
+      const result = await runMatchByIds(body.botA ?? "starter-greedy", body.botB ?? "starter-greedy", {
         seed: body.seed ?? Date.now(),
         writeReplay: body.writeReplay ?? true,
         maxTurns: positiveNumber(body.maxTurns, RULES.maxTurns),

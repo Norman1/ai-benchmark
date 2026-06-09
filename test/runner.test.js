@@ -33,7 +33,7 @@ test("bot subprocess requests enforce the configured timeout", async () => {
 });
 
 test("runner max turn safety limit produces a draw", async () => {
-  const { summary } = await runMatchByIds("starter-greedy", "starter-random", {
+  const { summary } = await runMatchByIds("starter-greedy", "starter-greedy", {
     seed: 42,
     writeReplay: false,
     maxTurns: 1,
@@ -47,13 +47,13 @@ test("runner max turn safety limit produces a draw", async () => {
 });
 
 test("string-seed matches can be replayed from the numeric summary seed", async () => {
-  const original = await runMatchByIds("starter-random", "starter-greedy", {
+  const original = await runMatchByIds("starter-greedy", "starter-greedy", {
     seed: "string-seed",
     writeReplay: false,
     maxTurns: 1,
     timeLimitMs: 1000
   });
-  const replayed = await runMatchByIds("starter-random", "starter-greedy", {
+  const replayed = await runMatchByIds("starter-greedy", "starter-greedy", {
     seed: original.summary.seed,
     writeReplay: false,
     maxTurns: 1,
@@ -368,8 +368,8 @@ test("starter greedy balances surplus deployments across expansion fronts", asyn
   }
 });
 
-test("starter bots can complete a subprocess match", async () => {
-  const { summary, replay } = await runMatchByIds("starter-greedy", "starter-random", {
+test("starter greedy can complete a subprocess mirror match", async () => {
+  const { summary, replay } = await runMatchByIds("starter-greedy", "starter-greedy", {
     seed: 777,
     writeReplay: false,
     maxTurns: 40,

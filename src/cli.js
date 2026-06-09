@@ -11,7 +11,7 @@ if (command === "bots") {
   const bots = await loadBotManifests();
   console.log(JSON.stringify(bots.map(({ id, name, description }) => ({ id, name, description })), null, 2));
 } else if (command === "match") {
-  const botA = options.botA ?? options.a ?? options._[0] ?? "starter-random";
+  const botA = options.botA ?? options.a ?? options._[0] ?? "starter-greedy";
   const botB = options.botB ?? options.b ?? options._[1] ?? "starter-greedy";
   const seed = options.seed ?? options._[2] ?? 1;
   const result = await runMatchByIds(botA, botB, {
@@ -61,7 +61,7 @@ if (command === "bots") {
 } else {
   console.log(`Usage:
   node src/cli.js bots
-  node src/cli.js match --botA starter-random --botB starter-greedy --seed 42 --timeLimitMs 5000
+  node src/cli.js match --botA starter-greedy --botB starter-greedy --seed 42 --timeLimitMs 5000
   node src/cli.js tournament --gamesPerPair 10 --timeLimitMs 5000
   node src/cli.js promote my-bot
   node src/cli.js selfplay my-bot baseline 100

@@ -200,8 +200,6 @@ Start with a deterministic bot before adding randomness. Good early priorities:
 
 Use the starter bots as runnable examples:
 
-- `bots/starter-random`
-- `bots/starter-expander`
 - `bots/starter-greedy`
 
 ## Self-Play Baseline

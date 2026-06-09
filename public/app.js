@@ -92,7 +92,7 @@ function fillBotSelects(bots) {
     select.innerHTML = bots.map((bot) => `<option value="${escapeHtml(bot.id)}">${escapeHtml(bot.name)}</option>`).join("");
   }
   els.botA.value = bots.find((bot) => bot.id === "starter-greedy")?.id ?? bots[0]?.id;
-  els.botB.value = bots.find((bot) => bot.id === "starter-random")?.id ?? bots[1]?.id ?? bots[0]?.id;
+  els.botB.value = bots.find((bot) => bot.id === "starter-greedy")?.id ?? bots[1]?.id ?? bots[0]?.id;
 }
 
 async function runMatch() {
