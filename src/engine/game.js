@@ -94,7 +94,8 @@ export class WarGame {
         territories: map.territories,
         bonuses: map.bonuses,
         adjacency: map.adjacency,
-        edges: map.edges
+        edges: map.edges,
+        routeEdges: map.routeEdges
       },
       players: this.botNames,
       setup: {
@@ -174,9 +175,12 @@ export class WarGame {
       normalizeTurnOrders(rawOrdersByPlayer?.[1])
     ];
     const turnEvents = [];
+    const pushStepFrame = (phase) => {
+      this.replay.frames.push(this.#frame(phase, parsed, turnEvents, turnEvents.length - 1));
+    };
 
-    this.#applyDeployments(0, parsed[0].deployments, incomes[0].total, turnEvents);
-    this.#applyDeployments(1, parsed[1].deployments, incomes[1].total, turnEvents);
+    this.#applyDeployments(0, parsed[0].deployments, incomes[0].total, turnEvents, pushStepFrame);
+    this.#applyDeployments(1, parsed[1].deployments, incomes[1].total, turnEvents, pushStepFrame);
 
     const movable = this.#initializeMovableArmies();
     const queues = [parsed[0].orders.slice(), parsed[1].orders.slice()];
@@ -188,7 +192,7 @@ export class WarGame {
         ? [this.firstMovePlayer, 1 - this.firstMovePlayer]
         : [1 - this.firstMovePlayer, this.firstMovePlayer];
       for (const playerId of order) {
-        this.#executeNextOrder(playerId, queues[playerId], movable, turnEvents);
+        this.#executeNextOrder(playerId, queues[playerId], movable, turnEvents, pushStepFrame);
       }
       round += 1;
     }
@@ -215,7 +219,9 @@ export class WarGame {
       });
     }
 
-    this.replay.frames.push(this.#frame("turn-end", parsed, turnEvents));
+    if (turnEvents.length === 0) {
+      this.replay.frames.push(this.#frame("turn-end", parsed, turnEvents));
+    }
     this.turn += 1;
     if (this.finished) this.replay.result = this.result;
     return this.result;
@@ -243,7 +249,7 @@ export class WarGame {
     }
   }
 
-  #applyDeployments(playerId, deployments, income, events) {
+  #applyDeployments(playerId, deployments, income, events, pushStepFrame) {
     let remaining = income;
     for (const deployment of deployments) {
       if (remaining <= 0) break;
@@ -254,12 +260,14 @@ export class WarGame {
       territory.armies += armies;
       remaining -= armies;
       events.push({ type: "deploy", playerId, territoryId: deployment.territoryId, armies });
+      pushStepFrame("deploy");
     }
     if (remaining > 0) {
       const fallback = this.getPlayerTerritories(playerId)[0];
       if (fallback) {
         this.territories[fallback].armies += remaining;
         events.push({ type: "deploy", playerId, territoryId: fallback, armies: remaining, fallback: true });
+        pushStepFrame("deploy");
       }
     }
   }
@@ -274,17 +282,17 @@ export class WarGame {
     return movable;
   }
 
-  #executeNextOrder(playerId, queue, movable, events) {
+  #executeNextOrder(playerId, queue, movable, events, pushStepFrame) {
     while (queue.length) {
       const order = queue.shift();
-      const result = this.#executeAttackTransfer(playerId, order, movable, events);
+      const result = this.#executeAttackTransfer(playerId, order, movable, events, pushStepFrame);
       if (result.executed) return result;
       if (result.consumedDelay) return result;
     }
     return { executed: false };
   }
 
-  #executeAttackTransfer(playerId, order, movable, events) {
+  #executeAttackTransfer(playerId, order, movable, events, pushStepFrame) {
     const source = this.territories[order.from];
     const target = this.territories[order.to];
     if (!source || !target || source.owner !== playerId) return { executed: false };
@@ -315,6 +323,7 @@ export class WarGame {
         mode: order.mode,
         byPercent: order.byPercent
       });
+      pushStepFrame("transfer");
       return { executed: true };
     }
 
@@ -357,6 +366,7 @@ export class WarGame {
       mode: order.mode,
       byPercent: order.byPercent
     });
+    pushStepFrame("attack");
     return { executed: true };
   }
 
@@ -365,7 +375,7 @@ export class WarGame {
     this.result = result;
   }
 
-  #frame(phase, orders, events) {
+  #frame(phase, orders, events, currentEventIndex = null) {
     return {
       turn: this.turn,
       phase,
@@ -373,6 +383,7 @@ export class WarGame {
       incomes: [this.calculateIncome(0), this.calculateIncome(1)],
       orders,
       events,
+      currentEventIndex,
       territories: Object.fromEntries(
         Object.entries(this.territories).map(([territoryId, state]) => [
           territoryId,

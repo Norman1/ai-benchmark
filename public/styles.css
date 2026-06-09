@@ -140,6 +140,25 @@ button:disabled {
   gap: 8px;
 }
 
+.history-meta {
+  min-height: 26px;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.history-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.history-buttons button {
+  min-width: 0;
+  padding-inline: 6px;
+  font-weight: 800;
+}
+
 .control-section {
   border-top: 1px solid var(--line);
   padding-top: 12px;
@@ -245,6 +264,15 @@ h2 {
   stroke-width: 2.8;
 }
 
+.territory.bonus-highlight {
+  filter: drop-shadow(0 0 4px #ff9b10) drop-shadow(0 0 10px rgba(255, 155, 16, 0.9));
+}
+
+.territory.fogged {
+  fill: #1f2928 !important;
+  opacity: 0.48;
+}
+
 .army-label {
   font-family: "Segoe UI", Arial, sans-serif;
   font-size: 16px;
@@ -261,10 +289,26 @@ h2 {
   stroke-width: 5px;
 }
 
+.army-label.bonus-highlight {
+  stroke: #ff9b10 !important;
+  stroke-width: 5px;
+}
+
+.army-label.fogged {
+  opacity: 0;
+}
+
 .bonus-marker {
   stroke: #fff500;
   stroke-width: 1.2;
   stroke-linejoin: round;
+  cursor: pointer;
+}
+
+.bonus-marker.selected {
+  filter: drop-shadow(0 0 5px #ff9b10);
+  stroke: #ff9b10;
+  stroke-width: 2.1;
 }
 
 .bonus-marker-text {
@@ -274,7 +318,31 @@ h2 {
   font-weight: 900;
   text-anchor: middle;
   dominant-baseline: central;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bonus-marker-text.selected {
+  fill: #fff7b6;
+  stroke: #ff9b10;
+  stroke-width: 1.7px;
+  paint-order: stroke;
+}
+
+.selection-layer,
+.event-layer {
   pointer-events: none;
+}
+
+.neighbor-arrow {
+  stroke: #ee221a;
+  stroke-width: 4.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px #160000);
+}
+
+.neighbor-arrowhead {
+  fill: #ee221a;
 }
 
 .event-edge {
@@ -337,6 +405,14 @@ h2 {
 
 .event-log li + li {
   margin-top: 6px;
+}
+
+.event-log .current-order {
+  color: var(--text);
+  background: rgba(231, 219, 160, 0.14);
+  border-left: 3px solid var(--gold);
+  margin-left: -8px;
+  padding: 5px 6px;
 }
 
 .tournament-results {

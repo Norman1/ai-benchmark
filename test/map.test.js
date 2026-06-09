@@ -34,6 +34,15 @@ test("explicit topology includes overseas route connections", () => {
   }
 });
 
+test("central america and west us bonus borders match the ladder map", () => {
+  const bonusById = new Map(MEDIUM_EARTH_MAP.bonuses.map((bonus) => [bonus.id, bonus]));
+  assert.deepEqual(new Set(bonusById.get("central_america").territories), new Set(["t6", "t25", "t28", "t31"]));
+  assert.ok(!bonusById.get("west_us").territories.includes("t25"));
+  assert.ok(!bonusById.get("west_us").territories.includes("t31"));
+  assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t25").bonusId, "central_america");
+  assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t31").bonusId, "central_america");
+});
+
 test("official geometry covers every engine territory", async () => {
   const geometry = JSON.parse(await readFile(new URL("../public/assets/medium-earth-geometry.json", import.meta.url), "utf8"));
   const geometryIds = new Set(geometry.territories.map((territory) => territory.id));

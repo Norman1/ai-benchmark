@@ -11,7 +11,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "canada",
       "name": "Canada",
       "value": 5,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
         "t58",
         "t61",
@@ -26,7 +26,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "greenland",
       "name": "Greenland",
       "value": 5,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
         "t9",
         "t62",
@@ -40,30 +40,32 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "central_america",
       "name": "Central America",
       "value": 3,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
         "t6",
+        "t25",
         "t28",
-        "t141",
-        "t147"
+        "t31"
       ]
     },
     {
       "id": "south_america",
       "name": "South America",
       "value": 4,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
         "t3",
         "t64",
-        "t125"
+        "t125",
+        "t141",
+        "t147"
       ]
     },
     {
       "id": "antarctica",
       "name": "Antarctica",
       "value": 3,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "territories": [
         "t20",
         "t85",
@@ -75,17 +77,12 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "west_us",
       "name": "West US",
       "value": 5,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "territories": [
         "t16",
-        "t25",
-        "t31",
-        "t35",
-        "t63",
         "t108",
         "t117",
         "t124",
-        "t130",
         "t131",
         "t143",
         "t152"
@@ -95,10 +92,13 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "east_us",
       "name": "East US",
       "value": 5,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "territories": [
+        "t35",
+        "t63",
         "t74",
         "t106",
+        "t130",
         "t132",
         "t146"
       ]
@@ -107,12 +107,13 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "australia",
       "name": "Australia",
       "value": 5,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
         "t12",
         "t15",
         "t27",
         "t91",
+        "t122",
         "t134"
       ]
     },
@@ -120,9 +121,10 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "south_africa",
       "name": "South Africa",
       "value": 3,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
         "t13",
+        "t17",
         "t22",
         "t41",
         "t59"
@@ -132,33 +134,38 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "west_africa",
       "name": "West Africa",
       "value": 4,
-      "color": "#c19a00",
+      "color": "#1db300",
       "territories": [
-        "t17",
         "t37",
         "t73",
         "t76",
         "t77",
-        "t82"
+        "t145"
       ]
     },
     {
       "id": "east_africa",
       "name": "East Africa",
       "value": 4,
-      "color": "#2b8f32",
+      "color": "#1101a3",
       "territories": [
+        "t33",
+        "t42",
+        "t97",
         "t98",
-        "t145"
+        "t148"
       ]
     },
     {
       "id": "north_africa",
       "name": "North Africa",
       "value": 3,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "territories": [
+        "t82",
+        "t84",
         "t99",
+        "t102",
         "t139"
       ]
     },
@@ -166,13 +173,14 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "europe",
       "name": "Europe",
       "value": 5,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "territories": [
+        "t10",
+        "t11",
         "t34",
         "t51",
         "t54",
-        "t84",
-        "t102",
+        "t80",
         "t109"
       ]
     },
@@ -180,11 +188,9 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "scandinavian_peninsula",
       "name": "Scandinavian Peninsula",
       "value": 3,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
-        "t10",
         "t39",
-        "t80",
         "t111",
         "t123",
         "t155"
@@ -194,13 +200,9 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "west_russia",
       "name": "West Russia",
       "value": 4,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "territories": [
         "t2",
-        "t11",
-        "t32",
-        "t36",
-        "t52",
         "t70",
         "t104",
         "t110",
@@ -211,11 +213,10 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "central_russia",
       "name": "Central Russia",
       "value": 4,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
         "t45",
         "t83",
-        "t86",
         "t105",
         "t120",
         "t137"
@@ -225,42 +226,37 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "caucasus",
       "name": "Caucasus",
       "value": 5,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
-        "t19",
-        "t21",
         "t23",
+        "t32",
+        "t36",
         "t40",
-        "t43",
-        "t71",
-        "t97",
-        "t138"
+        "t56",
+        "t86"
       ]
     },
     {
       "id": "middle_east",
       "name": "Middle East",
       "value": 4,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
-        "t33",
-        "t42",
+        "t19",
+        "t21",
+        "t43",
+        "t52",
         "t53",
-        "t148"
+        "t138"
       ]
     },
     {
       "id": "west_china",
       "name": "West China",
       "value": 6,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "territories": [
-        "t5",
-        "t26",
-        "t29",
-        "t50",
         "t55",
-        "t56",
         "t68",
         "t79",
         "t113",
@@ -272,10 +268,9 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "east_russia",
       "name": "East Russia",
       "value": 5,
-      "color": "#22318f",
+      "color": "#1101a3",
       "territories": [
         "t18",
-        "t24",
         "t46",
         "t65",
         "t72",
@@ -288,10 +283,12 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "east_china",
       "name": "East China",
       "value": 4,
-      "color": "#d21319",
+      "color": "#ff0000",
       "territories": [
         "t7",
-        "t47",
+        "t24",
+        "t26",
+        "t50",
         "t151"
       ]
     },
@@ -299,22 +296,25 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "indonesia",
       "name": "Indonesia",
       "value": 4,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "territories": [
         "t1",
+        "t47",
         "t48",
         "t81",
-        "t122"
+        "t90"
       ]
     },
     {
       "id": "southeast_asia",
       "name": "Southeast Asia",
       "value": 3,
-      "color": "#8b1aac",
+      "color": "#ffa300",
       "territories": [
+        "t5",
+        "t29",
         "t49",
-        "t90"
+        "t71"
       ]
     },
     {
@@ -365,7 +365,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 967.5,
       "y": 318.514,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -377,7 +377,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 563.665,
       "y": 86.191,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -389,19 +389,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 255.874,
       "y": 377.724,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t5",
       "numericId": 5,
-      "name": "West China 5",
-      "bonusId": "west_china",
-      "bonusName": "West China",
-      "bonusValue": 6,
+      "name": "Southeast Asia 5",
+      "bonusId": "southeast_asia",
+      "bonusName": "Southeast Asia",
+      "bonusValue": 3,
       "x": 756.918,
       "y": 206.26,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -413,7 +413,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 193.408,
       "y": 241.918,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -425,7 +425,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 827.851,
       "y": 184.451,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -449,31 +449,31 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 404.139,
       "y": 37.023,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t10",
       "numericId": 10,
-      "name": "Scandinavian Peninsula 10",
-      "bonusId": "scandinavian_peninsula",
-      "bonusName": "Scandinavian Peninsula",
-      "bonusValue": 3,
+      "name": "Europe 10",
+      "bonusId": "europe",
+      "bonusName": "Europe",
+      "bonusValue": 5,
       "x": 493.996,
       "y": 98.445,
-      "color": "#22318f",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t11",
       "numericId": 11,
-      "name": "West Russia 11",
-      "bonusId": "west_russia",
-      "bonusName": "West Russia",
-      "bonusValue": 4,
+      "name": "Europe 11",
+      "bonusId": "europe",
+      "bonusName": "Europe",
+      "bonusValue": 5,
       "x": 547.305,
       "y": 100.2,
-      "color": "#c19a00",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -485,7 +485,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 884.64,
       "y": 412.372,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -497,7 +497,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 526.822,
       "y": 368.773,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -509,7 +509,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 969.091,
       "y": 436.373,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -521,19 +521,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 136.522,
       "y": 122.008,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t17",
       "numericId": 17,
-      "name": "West Africa 17",
-      "bonusId": "west_africa",
-      "bonusName": "West Africa",
-      "bonusValue": 4,
+      "name": "South Africa 17",
+      "bonusId": "south_africa",
+      "bonusName": "South Africa",
+      "bonusValue": 3,
       "x": 520.949,
       "y": 328.954,
-      "color": "#c19a00",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -545,19 +545,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 780.654,
       "y": 93.229,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t19",
       "numericId": 19,
-      "name": "Caucasus 19",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "Middle East 19",
+      "bonusId": "middle_east",
+      "bonusName": "Middle East",
+      "bonusValue": 4,
       "x": 663.678,
       "y": 162.24,
-      "color": "#22318f",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -569,19 +569,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 809.22,
       "y": 539.229,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t21",
       "numericId": 21,
-      "name": "Caucasus 21",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "Middle East 21",
+      "bonusId": "middle_east",
+      "bonusName": "Middle East",
+      "bonusValue": 4,
       "x": 597.815,
       "y": 165.574,
-      "color": "#22318f",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -593,7 +593,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 610.282,
       "y": 354.079,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -605,43 +605,43 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 682.443,
       "y": 141.646,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t24",
       "numericId": 24,
-      "name": "East Russia 24",
-      "bonusId": "east_russia",
-      "bonusName": "East Russia",
-      "bonusValue": 5,
+      "name": "East China 24",
+      "bonusId": "east_china",
+      "bonusName": "East China",
+      "bonusValue": 4,
       "x": 818.505,
       "y": 143.907,
-      "color": "#22318f",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t25",
       "numericId": 25,
-      "name": "West US 25",
-      "bonusId": "west_us",
-      "bonusName": "West US",
-      "bonusValue": 5,
+      "name": "Central America 25",
+      "bonusId": "central_america",
+      "bonusName": "Central America",
+      "bonusValue": 3,
       "x": 150.438,
       "y": 202.309,
-      "color": "#2b8f32",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t26",
       "numericId": 26,
-      "name": "West China 26",
-      "bonusId": "west_china",
-      "bonusName": "West China",
-      "bonusValue": 6,
+      "name": "East China 26",
+      "bonusId": "east_china",
+      "bonusName": "East China",
+      "bonusValue": 4,
       "x": 794.529,
       "y": 200.586,
-      "color": "#2b8f32",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -653,7 +653,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 840.724,
       "y": 376.138,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -665,19 +665,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 222.378,
       "y": 211.341,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t29",
       "numericId": 29,
-      "name": "West China 29",
-      "bonusId": "west_china",
-      "bonusName": "West China",
-      "bonusValue": 6,
+      "name": "Southeast Asia 29",
+      "bonusId": "southeast_asia",
+      "bonusName": "Southeast Asia",
+      "bonusValue": 3,
       "x": 701.122,
       "y": 200.912,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -695,37 +695,37 @@ export const MEDIUM_EARTH_TOPOLOGY = {
     {
       "id": "t31",
       "numericId": 31,
-      "name": "West US 31",
-      "bonusId": "west_us",
-      "bonusName": "West US",
-      "bonusValue": 5,
+      "name": "Central America 31",
+      "bonusId": "central_america",
+      "bonusName": "Central America",
+      "bonusValue": 3,
       "x": 111.051,
       "y": 183.357,
-      "color": "#2b8f32",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t32",
       "numericId": 32,
-      "name": "West Russia 32",
-      "bonusId": "west_russia",
-      "bonusName": "West Russia",
-      "bonusValue": 4,
+      "name": "Caucasus 32",
+      "bonusId": "caucasus",
+      "bonusName": "Caucasus",
+      "bonusValue": 5,
       "x": 590.232,
       "y": 122.454,
-      "color": "#c19a00",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t33",
       "numericId": 33,
-      "name": "Middle East 33",
-      "bonusId": "middle_east",
-      "bonusName": "Middle East",
+      "name": "East Africa 33",
+      "bonusId": "east_africa",
+      "bonusName": "East Africa",
       "bonusValue": 4,
       "x": 560.472,
       "y": 239.235,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -737,31 +737,31 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 516.541,
       "y": 129.221,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t35",
       "numericId": 35,
-      "name": "West US 35",
-      "bonusId": "west_us",
-      "bonusName": "West US",
+      "name": "East US 35",
+      "bonusId": "east_us",
+      "bonusName": "East US",
       "bonusValue": 5,
       "x": 186,
       "y": 167.909,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t36",
       "numericId": 36,
-      "name": "West Russia 36",
-      "bonusId": "west_russia",
-      "bonusName": "West Russia",
-      "bonusValue": 4,
+      "name": "Caucasus 36",
+      "bonusId": "caucasus",
+      "bonusName": "Caucasus",
+      "bonusValue": 5,
       "x": 616.423,
       "y": 117.16,
-      "color": "#c19a00",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -773,7 +773,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 504.922,
       "y": 270.176,
-      "color": "#c19a00",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -797,7 +797,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 510.697,
       "y": 63.763,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -809,7 +809,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 642.029,
       "y": 143.511,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -821,31 +821,31 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 552.417,
       "y": 338.695,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t42",
       "numericId": 42,
-      "name": "Middle East 42",
-      "bonusId": "middle_east",
-      "bonusName": "Middle East",
+      "name": "East Africa 42",
+      "bonusId": "east_africa",
+      "bonusName": "East Africa",
       "bonusValue": 4,
       "x": 590.153,
       "y": 272.011,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t43",
       "numericId": 43,
-      "name": "Caucasus 43",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "Middle East 43",
+      "bonusId": "middle_east",
+      "bonusName": "Middle East",
+      "bonusValue": 4,
       "x": 624.141,
       "y": 162.09,
-      "color": "#22318f",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -857,7 +857,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 702.844,
       "y": 94.176,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -869,19 +869,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 832.098,
       "y": 95.767,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t47",
       "numericId": 47,
-      "name": "East China 47",
-      "bonusId": "east_china",
-      "bonusName": "East China",
+      "name": "Indonesia 47",
+      "bonusId": "indonesia",
+      "bonusName": "Indonesia",
       "bonusValue": 4,
       "x": 853.312,
       "y": 243.249,
-      "color": "#d21319",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -893,7 +893,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 911.997,
       "y": 304.098,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -905,19 +905,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 787.252,
       "y": 234.599,
-      "color": "#8b1aac",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t50",
       "numericId": 50,
-      "name": "West China 50",
-      "bonusId": "west_china",
-      "bonusName": "West China",
-      "bonusValue": 6,
+      "name": "East China 50",
+      "bonusId": "east_china",
+      "bonusName": "East China",
+      "bonusValue": 4,
       "x": 808.962,
       "y": 176.03,
-      "color": "#2b8f32",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -929,19 +929,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 471.587,
       "y": 116.113,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t52",
       "numericId": 52,
-      "name": "West Russia 52",
-      "bonusId": "west_russia",
-      "bonusName": "West Russia",
+      "name": "Middle East 52",
+      "bonusId": "middle_east",
+      "bonusName": "Middle East",
       "bonusValue": 4,
       "x": 572.186,
       "y": 144.754,
-      "color": "#c19a00",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -953,7 +953,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 609.057,
       "y": 205.131,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -965,7 +965,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 455.169,
       "y": 93.085,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -977,19 +977,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 713.981,
       "y": 137.35,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t56",
       "numericId": 56,
-      "name": "West China 56",
-      "bonusId": "west_china",
-      "bonusName": "West China",
-      "bonusValue": 6,
+      "name": "Caucasus 56",
+      "bonusId": "caucasus",
+      "bonusName": "Caucasus",
+      "bonusValue": 5,
       "x": 693.614,
       "y": 115.299,
-      "color": "#2b8f32",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1001,7 +1001,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 161.02,
       "y": 52.349,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1013,7 +1013,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 553.142,
       "y": 367.744,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1037,7 +1037,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 266.894,
       "y": 36.417,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1049,19 +1049,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 425.436,
       "y": 11.929,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t63",
       "numericId": 63,
-      "name": "West US 63",
-      "bonusId": "west_us",
-      "bonusName": "West US",
+      "name": "East US 63",
+      "bonusId": "east_us",
+      "bonusName": "East US",
       "bonusValue": 5,
       "x": 198.765,
       "y": 134.159,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1073,7 +1073,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 288.051,
       "y": 325.397,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1085,7 +1085,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 832.649,
       "y": 47.957,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1097,7 +1097,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 140.64,
       "y": 58.848,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1109,7 +1109,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 793.663,
       "y": 127.984,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1121,19 +1121,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 611.359,
       "y": 91.038,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t71",
       "numericId": 71,
-      "name": "Caucasus 71",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "Southeast Asia 71",
+      "bonusId": "southeast_asia",
+      "bonusName": "Southeast Asia",
+      "bonusValue": 3,
       "x": 678.386,
       "y": 178.632,
-      "color": "#22318f",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1145,7 +1145,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 895.439,
       "y": 53.855,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1157,7 +1157,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 522.998,
       "y": 247.907,
-      "color": "#c19a00",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1169,7 +1169,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 216.351,
       "y": 135.287,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1181,7 +1181,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 454.709,
       "y": 255.272,
-      "color": "#c19a00",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1193,7 +1193,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 488.21,
       "y": 250.761,
-      "color": "#c19a00",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1205,7 +1205,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 355.453,
       "y": 51.08,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1217,19 +1217,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 754.701,
       "y": 155.705,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t80",
       "numericId": 80,
-      "name": "Scandinavian Peninsula 80",
-      "bonusId": "scandinavian_peninsula",
-      "bonusName": "Scandinavian Peninsula",
-      "bonusValue": 3,
+      "name": "Europe 80",
+      "bonusId": "europe",
+      "bonusName": "Europe",
+      "bonusValue": 5,
       "x": 517.177,
       "y": 102.869,
-      "color": "#22318f",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1241,19 +1241,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 828.368,
       "y": 283.866,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t82",
       "numericId": 82,
-      "name": "West Africa 82",
-      "bonusId": "west_africa",
-      "bonusName": "West Africa",
-      "bonusValue": 4,
+      "name": "North Africa 82",
+      "bonusId": "north_africa",
+      "bonusName": "North Africa",
+      "bonusValue": 3,
       "x": 441.084,
       "y": 238.302,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1265,19 +1265,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 696.788,
       "y": 72.341,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t84",
       "numericId": 84,
-      "name": "Europe 84",
-      "bonusId": "europe",
-      "bonusName": "Europe",
-      "bonusValue": 5,
+      "name": "North Africa 84",
+      "bonusId": "north_africa",
+      "bonusName": "North Africa",
+      "bonusValue": 3,
       "x": 517.08,
       "y": 182.928,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1289,19 +1289,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 543.729,
       "y": 532.918,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t86",
       "numericId": 86,
-      "name": "Central Russia 86",
-      "bonusId": "central_russia",
-      "bonusName": "Central Russia",
-      "bonusValue": 4,
+      "name": "Caucasus 86",
+      "bonusId": "caucasus",
+      "bonusName": "Caucasus",
+      "bonusValue": 5,
       "x": 654.799,
       "y": 107.948,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1313,19 +1313,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 418.759,
       "y": 57.148,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t90",
       "numericId": 90,
-      "name": "Southeast Asia 90",
-      "bonusId": "southeast_asia",
-      "bonusName": "Southeast Asia",
-      "bonusValue": 3,
+      "name": "Indonesia 90",
+      "bonusId": "indonesia",
+      "bonusName": "Indonesia",
+      "bonusValue": 4,
       "x": 797.185,
       "y": 288.905,
-      "color": "#8b1aac",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1337,7 +1337,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 895.082,
       "y": 436.37,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1349,19 +1349,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 287.603,
       "y": 538.403,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t97",
       "numericId": 97,
-      "name": "Caucasus 97",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "East Africa 97",
+      "bonusId": "east_africa",
+      "bonusName": "East Africa",
+      "bonusValue": 4,
       "x": 560.648,
       "y": 183.888,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1373,7 +1373,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 574.079,
       "y": 307.002,
-      "color": "#2b8f32",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1385,7 +1385,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 489.086,
       "y": 227.378,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1397,19 +1397,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 192.913,
       "y": 88.735,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t102",
       "numericId": 102,
-      "name": "Europe 102",
-      "bonusId": "europe",
-      "bonusName": "Europe",
-      "bonusValue": 5,
+      "name": "North Africa 102",
+      "bonusId": "north_africa",
+      "bonusName": "North Africa",
+      "bonusValue": 3,
       "x": 471.148,
       "y": 174.03,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1421,7 +1421,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 797.644,
       "y": 58.38,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1433,7 +1433,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 549.715,
       "y": 49.562,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1445,7 +1445,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 685.64,
       "y": 42.091,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1457,7 +1457,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 246.824,
       "y": 135.555,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1469,7 +1469,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 122.74,
       "y": 90.308,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1481,7 +1481,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 122.402,
       "y": 120.483,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1493,7 +1493,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 451.597,
       "y": 141.307,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1505,7 +1505,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 584.063,
       "y": 66.744,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1517,7 +1517,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 534.493,
       "y": 53.247,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1529,7 +1529,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 352.349,
       "y": 15.565,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1541,7 +1541,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 781.968,
       "y": 166.965,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1565,7 +1565,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 150.488,
       "y": 138.609,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1577,7 +1577,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 735.24,
       "y": 170.404,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1589,19 +1589,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 658.069,
       "y": 81.251,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t122",
       "numericId": 122,
-      "name": "Indonesia 122",
-      "bonusId": "indonesia",
-      "bonusName": "Indonesia",
-      "bonusValue": 4,
+      "name": "Australia 122",
+      "bonusId": "australia",
+      "bonusName": "Australia",
+      "bonusValue": 5,
       "x": 909.89,
       "y": 347.305,
-      "color": "#2b8f32",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1613,7 +1613,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 509.222,
       "y": 53.195,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1625,7 +1625,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 106.62,
       "y": 150.237,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1637,7 +1637,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 260.739,
       "y": 348.08,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1649,7 +1649,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 382.509,
       "y": 22.757,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1661,7 +1661,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 503.707,
       "y": 540.056,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1673,19 +1673,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 878.5,
       "y": 70.197,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t130",
       "numericId": 130,
-      "name": "West US 130",
-      "bonusId": "west_us",
-      "bonusName": "West US",
+      "name": "East US 130",
+      "bonusId": "east_us",
+      "bonusName": "East US",
       "bonusValue": 5,
       "x": 188.436,
       "y": 129.248,
-      "color": "#2b8f32",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1697,7 +1697,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 125.206,
       "y": 145.883,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1709,7 +1709,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 208.65,
       "y": 175.983,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
@@ -1721,7 +1721,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 925.84,
       "y": 394.493,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1733,7 +1733,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 746.131,
       "y": 68.041,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1745,19 +1745,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 642.517,
       "y": 54.719,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
       "id": "t138",
       "numericId": 138,
-      "name": "Caucasus 138",
-      "bonusId": "caucasus",
-      "bonusName": "Caucasus",
-      "bonusValue": 5,
+      "name": "Middle East 138",
+      "bonusId": "middle_east",
+      "bonusName": "Middle East",
+      "bonusValue": 4,
       "x": 580.188,
       "y": 164.431,
-      "color": "#22318f",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1769,19 +1769,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 423.044,
       "y": 212.757,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t141",
       "numericId": 141,
-      "name": "Central America 141",
-      "bonusId": "central_america",
-      "bonusName": "Central America",
-      "bonusValue": 3,
+      "name": "South America 141",
+      "bonusId": "south_america",
+      "bonusName": "South America",
+      "bonusValue": 4,
       "x": 258.877,
       "y": 262.118,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1793,7 +1793,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 129.336,
       "y": 163.951,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1805,19 +1805,19 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 6,
       "x": 760.337,
       "y": 112.905,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
       "id": "t145",
       "numericId": 145,
-      "name": "East Africa 145",
-      "bonusId": "east_africa",
-      "bonusName": "East Africa",
+      "name": "West Africa 145",
+      "bonusId": "west_africa",
+      "bonusName": "West Africa",
       "bonusValue": 4,
       "x": 538.364,
       "y": 296.923,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1829,31 +1829,31 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 221.872,
       "y": 161.289,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     },
     {
       "id": "t147",
       "numericId": 147,
-      "name": "Central America 147",
-      "bonusId": "central_america",
-      "bonusName": "Central America",
-      "bonusValue": 3,
+      "name": "South America 147",
+      "bonusId": "south_america",
+      "bonusName": "South America",
+      "bonusValue": 4,
       "x": 226.152,
       "y": 274.55,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
       "id": "t148",
       "numericId": 148,
-      "name": "Middle East 148",
-      "bonusId": "middle_east",
-      "bonusName": "Middle East",
+      "name": "East Africa 148",
+      "bonusId": "east_africa",
+      "bonusName": "East Africa",
       "bonusValue": 4,
       "x": 587.953,
       "y": 251.762,
-      "color": "#d21319",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1865,7 +1865,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 843.93,
       "y": 205.453,
-      "color": "#d21319",
+      "color": "#ff0000",
       "zeroBonus": false
     },
     {
@@ -1877,7 +1877,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 158.482,
       "y": 175.819,
-      "color": "#2b8f32",
+      "color": "#1db300",
       "zeroBonus": false
     },
     {
@@ -1889,7 +1889,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 232.29,
       "y": 113.731,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1901,7 +1901,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 5,
       "x": 284.199,
       "y": 95.512,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1913,7 +1913,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 3,
       "x": 512.439,
       "y": 14.546,
-      "color": "#22318f",
+      "color": "#1101a3",
       "zeroBonus": false
     },
     {
@@ -1925,7 +1925,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "bonusValue": 4,
       "x": 610.726,
       "y": 55.57,
-      "color": "#c19a00",
+      "color": "#ffa300",
       "zeroBonus": false
     }
   ],

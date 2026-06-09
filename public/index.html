@@ -35,18 +35,32 @@
         </div>
 
         <section class="control-section">
-          <h2>Replay</h2>
+          <h2>History</h2>
+          <div class="history-meta" id="historyMeta">No replay</div>
+          <input id="scrubber" type="range" min="0" max="0" value="0">
+          <div class="history-buttons">
+            <button id="stepTurnBack" title="Previous turn">&lt;&lt;</button>
+            <button id="stepBack" title="Previous order">&lt;</button>
+            <button id="stepForward" title="Next order">&gt;</button>
+            <button id="stepTurnForward" title="Next turn">&gt;&gt;</button>
+          </div>
           <div class="button-row">
-            <button id="playPause">Play</button>
-            <button id="stepBack">Back</button>
-            <button id="stepForward">Next</button>
+            <button id="beginning">Beginning</button>
+            <button id="end">End</button>
           </div>
           <label>
-            Turn
-            <input id="scrubber" type="range" min="0" max="0" value="0">
+            Perspective
+            <select id="perspective">
+              <option value="all">All</option>
+              <option value="0">Bot A</option>
+              <option value="1">Bot B</option>
+            </select>
           </label>
+          <div class="button-row">
+            <button id="playPause">Play</button>
+          </div>
           <label>
-            Speed
+            Playback speed
             <input id="speed" type="range" min="100" max="1600" step="100" value="700">
           </label>
         </section>
@@ -73,16 +87,16 @@
 
       <aside class="panel inspect">
         <section>
+          <h2>Orders</h2>
+          <ol id="eventLog" class="event-log"></ol>
+        </section>
+        <section>
           <h2>Players</h2>
           <div class="score-grid" id="scoreGrid"></div>
         </section>
         <section>
           <h2>Territory</h2>
           <div id="territoryDetails" class="territory-details">Select an army number on the board.</div>
-        </section>
-        <section>
-          <h2>Events</h2>
-          <ol id="eventLog" class="event-log"></ol>
         </section>
         <section>
           <h2>Tournament</h2>

@@ -6,10 +6,16 @@ const els = {
   runMatch: document.getElementById("runMatch"),
   runTournament: document.getElementById("runTournament"),
   playPause: document.getElementById("playPause"),
+  stepTurnBack: document.getElementById("stepTurnBack"),
   stepBack: document.getElementById("stepBack"),
   stepForward: document.getElementById("stepForward"),
+  stepTurnForward: document.getElementById("stepTurnForward"),
+  beginning: document.getElementById("beginning"),
+  end: document.getElementById("end"),
   scrubber: document.getElementById("scrubber"),
   speed: document.getElementById("speed"),
+  perspective: document.getElementById("perspective"),
+  historyMeta: document.getElementById("historyMeta"),
   resultList: document.getElementById("resultList"),
   turnTitle: document.getElementById("turnTitle"),
   board: document.getElementById("board"),
@@ -38,15 +44,26 @@ let geometryPayload = null;
 let replay = null;
 let frameIndex = 0;
 let selectedTerritoryId = null;
+let selectedBonusId = null;
 let timer = null;
 let board = null;
 
 els.runMatch.addEventListener("click", runMatch);
 els.runTournament.addEventListener("click", runTournament);
 els.playPause.addEventListener("click", togglePlayback);
+els.stepTurnBack.addEventListener("click", () => setFrame(findTurnStep(-1)));
 els.stepBack.addEventListener("click", () => setFrame(frameIndex - 1));
 els.stepForward.addEventListener("click", () => setFrame(frameIndex + 1));
+els.stepTurnForward.addEventListener("click", () => setFrame(findTurnStep(1)));
+els.beginning.addEventListener("click", () => setFrame(0));
+els.end.addEventListener("click", () => replay && setFrame(replay.frames.length - 1));
 els.scrubber.addEventListener("input", () => setFrame(Number(els.scrubber.value)));
+els.perspective.addEventListener("change", () => replay && renderFrame());
+els.board.addEventListener("click", (event) => {
+  if (event.target === els.board || event.target.classList.contains("sea") || event.target.classList.contains("route")) {
+    clearSelection();
+  }
+});
 
 await boot();
 
@@ -89,6 +106,7 @@ async function runMatch() {
     replay = result.replay;
     frameIndex = 0;
     selectedTerritoryId = null;
+    selectedBonusId = null;
     els.scrubber.max = String(replay.frames.length - 1);
     renderResult(result.summary);
     setFrame(0);
@@ -144,18 +162,27 @@ function renderFrame() {
   const setup = replay.setup;
   renderMapState(frame);
 
+  const lastTurn = lastTurnNumber();
+  const currentOrder = Number.isInteger(frame.currentEventIndex)
+    ? `, order ${frame.currentEventIndex + 1} of ${frame.events.length}`
+    : "";
   els.turnTitle.textContent = frame.phase === "initial"
     ? `Setup: picks allocated, ${setup.wastelands.length} wastelands`
     : `Turn ${frame.turn}: ${frame.events.length} executed orders`;
+  els.historyMeta.textContent = frame.phase === "initial"
+    ? `Beginning of ${lastTurn} turns`
+    : `Turn ${frame.turn} of ${lastTurn}${currentOrder}`;
   renderScores(frame);
   renderEvents(frame);
   renderTerritoryDetails(frame);
 }
 
 function renderMapState(frame) {
+  const visible = visibleTerritories(frame);
   for (const territory of board.territoryList) {
     const state = frame.territories[territory.id];
     if (!state) continue;
+    const fogged = visible && !visible.has(territory.id);
     const owned = state.owner === 0 || state.owner === 1;
     const fill = owned ? COLORS.player[state.owner].fill : COLORS.neutral;
     const textFill = owned ? COLORS.player[state.owner].text : COLORS.neutralText;
@@ -167,32 +194,42 @@ function renderMapState(frame) {
     territory.path.dataset.owner = ownerName;
     territory.path.dataset.armies = String(state.armies);
     territory.path.classList.toggle("selected", selected);
-    territory.label.textContent = String(state.armies);
+    territory.path.classList.toggle("bonus-highlight", selectedBonusId === territory.bonusId);
+    territory.path.classList.toggle("fogged", fogged);
+    territory.label.textContent = fogged ? "" : String(state.armies);
     territory.label.style.fill = textFill;
     territory.label.style.stroke = selected ? COLORS.selected : textStroke;
     territory.label.dataset.owner = ownerName;
     territory.label.dataset.armies = String(state.armies);
     territory.label.classList.toggle("selected", selected);
+    territory.label.classList.toggle("bonus-highlight", selectedBonusId === territory.bonusId);
+    territory.label.classList.toggle("fogged", fogged);
   }
+  for (const [bonusId, marker] of board.bonusMarkers) {
+    const selected = selectedBonusId === bonusId;
+    marker.path.classList.toggle("selected", selected);
+    marker.text.classList.toggle("selected", selected);
+  }
+  renderSelectionOverlay();
   renderEventEdges(frame);
 }
 
 function renderEventEdges(frame) {
   board.eventLayer.replaceChildren();
-  for (const event of frame.events) {
-    if (!event.from || !event.to) continue;
-    const from = board.territories.get(event.from);
-    const to = board.territories.get(event.to);
-    if (!from || !to) continue;
-    const line = svg("line", {
-      x1: from.labelPoint.x,
-      y1: from.labelPoint.y,
-      x2: to.labelPoint.x,
-      y2: to.labelPoint.y,
-      class: "event-edge"
-    });
-    board.eventLayer.append(line);
-  }
+  if (!Number.isInteger(frame.currentEventIndex)) return;
+  const event = frame.events[frame.currentEventIndex];
+  if (!event?.from || !event?.to) return;
+  const from = board.territories.get(event.from);
+  const to = board.territories.get(event.to);
+  if (!from || !to) return;
+  board.eventLayer.append(svg("line", {
+    x1: from.labelPoint.x,
+    y1: from.labelPoint.y,
+    x2: to.labelPoint.x,
+    y2: to.labelPoint.y,
+    class: "event-edge",
+    "marker-end": "url(#neighbor-arrowhead)"
+  }));
 }
 
 function buildBoard(map, geometry) {
@@ -204,13 +241,27 @@ function buildBoard(map, geometry) {
   const routeLayer = svg("g", { class: "route-layer" });
   const territoryLayer = svg("g", { class: "territory-layer" });
   const bonusLayer = svg("g", { class: "bonus-layer" });
+  const selectionLayer = svg("g", { class: "selection-layer" });
   const eventLayer = svg("g", { class: "event-layer" });
   const labelLayer = svg("g", { class: "label-layer" });
-  els.board.append(sea, routeLayer, territoryLayer, bonusLayer, eventLayer, labelLayer);
+  const defs = svg("defs");
+  const arrowMarker = svg("marker", {
+    id: "neighbor-arrowhead",
+    viewBox: "0 0 10 10",
+    refX: "8.5",
+    refY: "5",
+    markerWidth: "6",
+    markerHeight: "6",
+    orient: "auto-start-reverse"
+  });
+  arrowMarker.append(svg("path", { d: "M 0 0 L 10 5 L 0 10 z", class: "neighbor-arrowhead" }));
+  defs.append(arrowMarker);
+  els.board.append(defs, sea, routeLayer, territoryLayer, bonusLayer, selectionLayer, eventLayer, labelLayer);
 
   const mapTerritories = new Map(map.territories.map((territory) => [territory.id, territory]));
   const geometryById = new Map(geometry.territories.map((territory) => [territory.id, territory]));
   const territories = new Map();
+  const bonusMarkers = new Map();
   const territoryList = [];
 
   for (const territory of map.territories) {
@@ -222,7 +273,7 @@ function buildBoard(map, geometry) {
       "data-id": territory.id
     });
     path.style.stroke = territory.color;
-    path.addEventListener("click", () => selectTerritory(territory.id));
+    path.addEventListener("click", (event) => selectTerritory(event, territory.id));
 
     const label = svg("text", {
       x: territoryGeometry.label.x,
@@ -230,7 +281,7 @@ function buildBoard(map, geometry) {
       class: "army-label",
       "data-id": territory.id
     });
-    label.addEventListener("click", () => selectTerritory(territory.id));
+    label.addEventListener("click", (event) => selectTerritory(event, territory.id));
     territoryLayer.append(path);
     labelLayer.append(label);
 
@@ -245,9 +296,9 @@ function buildBoard(map, geometry) {
   }
 
   drawRouteHints(map, geometry, territories, routeLayer);
-  drawBonusMarkers(map, geometry, bonusLayer);
+  drawBonusMarkers(map, geometry, bonusLayer, bonusMarkers);
 
-  return { territories, territoryList, eventLayer };
+  return { territories, territoryList, bonusMarkers, selectionLayer, eventLayer };
 }
 
 function drawRouteHints(map, geometry, territories, routeLayer) {
@@ -275,26 +326,77 @@ function drawRouteHints(map, geometry, territories, routeLayer) {
   }
 }
 
-function drawBonusMarkers(map, geometry, bonusLayer) {
+function drawBonusMarkers(map, geometry, bonusLayer, bonusMarkers) {
   const bonusById = new Map(map.bonuses.map((bonus) => [bonus.id, bonus]));
   for (const marker of geometry.bonusLinks) {
     const bonus = bonusById.get(marker.id);
     if (!bonus) continue;
-    const path = svg("path", { d: marker.path, class: "bonus-marker" });
+    const path = svg("path", { d: marker.path, class: "bonus-marker", "data-bonus-id": bonus.id });
     path.style.fill = bonus.color;
+    path.addEventListener("click", (event) => selectBonus(event, bonus.id));
     const text = svg("text", {
       x: marker.label.x,
       y: marker.label.y + 0.8,
-      class: "bonus-marker-text"
+      class: "bonus-marker-text",
+      "data-bonus-id": bonus.id
     });
     text.textContent = String(bonus.value);
+    text.addEventListener("click", (event) => selectBonus(event, bonus.id));
     bonusLayer.append(path, text);
+    bonusMarkers.set(bonus.id, { path, text });
   }
 }
 
-function selectTerritory(territoryId) {
+function selectTerritory(event, territoryId) {
+  event.stopPropagation();
   selectedTerritoryId = territoryId;
+  selectedBonusId = null;
   if (replay) renderFrame();
+}
+
+function selectBonus(event, bonusId) {
+  event.stopPropagation();
+  selectedBonusId = bonusId;
+  selectedTerritoryId = null;
+  if (replay) renderFrame();
+}
+
+function clearSelection() {
+  selectedTerritoryId = null;
+  selectedBonusId = null;
+  if (replay) renderFrame();
+}
+
+function renderSelectionOverlay() {
+  board.selectionLayer.replaceChildren();
+  if (!selectedTerritoryId) return;
+  const source = board.territories.get(selectedTerritoryId);
+  if (!source) return;
+  const neighbors = replay.map.adjacency[selectedTerritoryId] ?? [];
+  for (const neighborId of neighbors) {
+    const target = board.territories.get(neighborId);
+    if (!target) continue;
+    board.selectionLayer.append(svg("line", {
+      x1: source.labelPoint.x,
+      y1: source.labelPoint.y,
+      x2: target.labelPoint.x,
+      y2: target.labelPoint.y,
+      class: "neighbor-arrow",
+      "marker-end": "url(#neighbor-arrowhead)"
+    }));
+  }
+}
+
+function visibleTerritories(frame) {
+  if (els.perspective.value === "all") return null;
+  const playerId = Number(els.perspective.value);
+  const visible = new Set();
+  for (const [territoryId, state] of Object.entries(frame.territories)) {
+    if (state.owner !== playerId) continue;
+    visible.add(territoryId);
+    for (const neighborId of replay.map.adjacency[territoryId] ?? []) visible.add(neighborId);
+  }
+  return visible;
 }
 
 function renderScores(frame) {
@@ -324,7 +426,12 @@ function renderEvents(frame) {
     els.eventLog.innerHTML = "<li>No executed orders in this frame.</li>";
     return;
   }
-  els.eventLog.innerHTML = frame.events.slice(-24).map((event) => `<li>${escapeHtml(describeEvent(event))}</li>`).join("");
+  els.eventLog.innerHTML = frame.events.map((event, index) => `
+    <li class="${index === frame.currentEventIndex ? "current-order" : ""}">
+      ${escapeHtml(describeEvent(event))}
+    </li>
+  `).join("");
+  els.eventLog.querySelector(".current-order")?.scrollIntoView({ block: "nearest" });
 }
 
 function renderTerritoryDetails(frame) {
@@ -396,6 +503,26 @@ function stopPlayback() {
   if (timer) clearInterval(timer);
   timer = null;
   els.playPause.textContent = "Play";
+}
+
+function findTurnStep(direction) {
+  if (!replay) return 0;
+  const currentFrame = replay.frames[frameIndex];
+  if (direction > 0 && currentFrame.phase === "initial") return Math.min(1, replay.frames.length - 1);
+  const currentTurn = currentFrame.turn;
+  const targetTurns = replay.frames
+    .filter((frame) => frame.phase !== "initial")
+    .map((frame) => frame.turn)
+    .filter((turn) => direction > 0 ? turn > currentTurn : turn < currentTurn);
+  if (!targetTurns.length) return direction > 0 ? replay.frames.length - 1 : 0;
+  const targetTurn = direction > 0 ? Math.min(...targetTurns) : Math.max(...targetTurns);
+  const targetIndex = replay.frames.findIndex((frame) => frame.turn === targetTurn && frame.phase !== "initial");
+  return targetIndex === -1 ? frameIndex : targetIndex;
+}
+
+function lastTurnNumber() {
+  if (!replay?.frames.length) return 0;
+  return Math.max(...replay.frames.map((frame) => frame.turn));
 }
 
 function setBusy(busy) {
