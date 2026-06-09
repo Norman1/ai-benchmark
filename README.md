@@ -40,6 +40,7 @@ Read `BOT_API.md` before implementing a bot. It documents the stdin/stdout proto
 - multi-attack off
 - cycle move order
 - 0% luck, straight round, 60% offensive kill rate, 70% defensive kill rate
+- winner is decided by elimination only; reaching the max turn safety limit is a draw
 
 The fixed map topology is maintained in `src/engine/medium-earth-topology.js`. It contains territory IDs, bonus membership, bonus values, adjacency lists, and explicit overseas route edges. Engine behavior is in `src/engine/game.js`; bot process isolation is in `src/runner`.
 

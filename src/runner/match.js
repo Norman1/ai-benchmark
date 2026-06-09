@@ -80,17 +80,12 @@ export async function runMatch(botManifests, options = {}) {
       game.replay.result = game.result;
     } else if (!game.finished) {
       const finalFrame = game.replay.frames.at(-1);
-      const territoryCounts = [0, 0];
-      for (const state of Object.values(finalFrame.territories)) {
-        if (state.owner === 0 || state.owner === 1) territoryCounts[state.owner] += 1;
-      }
-      const winner = territoryCounts[0] === territoryCounts[1] ? null : (territoryCounts[0] > territoryCounts[1] ? 0 : 1);
       game.finished = true;
       game.result = {
-        winner,
-        loser: winner === null ? null : 1 - winner,
-        reason: winner === null ? "turn_limit_draw" : "turn_limit_territory_tiebreak",
-        turn: game.turn
+        winner: null,
+        loser: null,
+        reason: "turn_limit_draw",
+        turn: finalFrame?.turn ?? maxTurns
       };
       game.replay.result = game.result;
     }

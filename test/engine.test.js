@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { WarGame, createDraft } from "../src/engine/game.js";
+import { RULES } from "../src/engine/rules.js";
 
 test("starting territories and neutral armies are initialized correctly", () => {
   const draft = createDraft(1);
@@ -89,4 +90,25 @@ test("replay records a frame for each executed order", () => {
   assert.ok(orderFrames.length >= 2);
   assert.equal(orderFrames[0].events[orderFrames[0].currentEventIndex].type, "deploy");
   assert.equal(orderFrames.at(-1).events[orderFrames.at(-1).currentEventIndex].type, "attack");
+});
+
+test("reaching the max turn limit is a draw without tiebreak scoring", () => {
+  const draft = createDraft(5);
+  const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
+  const game = new WarGame({ seed: 5, draft, pickOrders });
+  const extraTerritory = Object.entries(game.territories)
+    .find(([, state]) => state.owner === null)?.[0];
+  assert.ok(extraTerritory);
+  game.territories[extraTerritory] = { owner: 0, armies: 25 };
+  game.turn = RULES.maxTurns;
+
+  const result = game.runTurn([{ deployments: [], orders: [] }, { deployments: [], orders: [] }]);
+
+  assert.deepEqual(result, {
+    winner: null,
+    loser: null,
+    reason: "turn_limit_draw",
+    turn: RULES.maxTurns
+  });
+  assert.deepEqual(game.replay.result, result);
 });

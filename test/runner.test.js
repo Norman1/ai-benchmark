@@ -26,6 +26,20 @@ test("bot subprocess requests enforce the configured timeout", async () => {
   }
 });
 
+test("runner max turn safety limit produces a draw", async () => {
+  const { summary } = await runMatchByIds("starter-greedy", "starter-random", {
+    seed: 42,
+    writeReplay: false,
+    maxTurns: 1,
+    timeLimitMs: 1000
+  });
+
+  assert.equal(summary.result.winner, null);
+  assert.equal(summary.result.loser, null);
+  assert.equal(summary.result.reason, "turn_limit_draw");
+  assert.equal(summary.result.turn, 1);
+});
+
 test("starter bots can complete a subprocess match", async () => {
   const { summary, replay } = await runMatchByIds("starter-greedy", "starter-random", {
     seed: 777,

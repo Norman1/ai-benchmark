@@ -219,15 +219,10 @@ export class WarGame {
         turn: this.turn
       });
     } else if (this.turn >= RULES.maxTurns) {
-      const counts = [this.getPlayerTerritories(0).length, this.getPlayerTerritories(1).length];
-      const incomesNow = [this.calculateIncome(0).total, this.calculateIncome(1).total];
-      const winner = incomesNow[0] === incomesNow[1]
-        ? (counts[0] === counts[1] ? null : (counts[0] > counts[1] ? 0 : 1))
-        : (incomesNow[0] > incomesNow[1] ? 0 : 1);
       this.#finish({
-        winner,
-        loser: winner === null ? null : 1 - winner,
-        reason: winner === null ? "max_turn_draw" : "max_turn_tiebreak",
+        winner: null,
+        loser: null,
+        reason: "turn_limit_draw",
         turn: this.turn
       });
     }
