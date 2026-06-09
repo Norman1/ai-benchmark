@@ -25,10 +25,16 @@
           Bot B
           <select id="botB"></select>
         </label>
-        <label>
-          Seed
-          <input id="seed" value="42">
-        </label>
+        <div class="field-group">
+          <label for="seed">Seed</label>
+          <div class="seed-row">
+            <input id="seed" value="42">
+            <label class="checkbox-label">
+              <input id="seedLocked" type="checkbox">
+              Locked
+            </label>
+          </div>
+        </div>
         <label>
           Bot timeout (ms)
           <input id="timeLimitMs" type="number" min="100" step="100" value="5000">

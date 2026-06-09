@@ -3,6 +3,7 @@ const els = {
   botA: document.getElementById("botA"),
   botB: document.getElementById("botB"),
   seed: document.getElementById("seed"),
+  seedLocked: document.getElementById("seedLocked"),
   timeLimitMs: document.getElementById("timeLimitMs"),
   runMatch: document.getElementById("runMatch"),
   runTournament: document.getElementById("runTournament"),
@@ -52,6 +53,7 @@ let board = null;
 
 els.runMatch.addEventListener("click", runMatch);
 els.runTournament.addEventListener("click", runTournament);
+els.eventLog.addEventListener("click", jumpToOrder);
 els.playPause.addEventListener("click", togglePlayback);
 els.stepTurnBack.addEventListener("click", () => setFrame(findTurnStep(-1)));
 els.stepBack.addEventListener("click", () => setFrame(frameIndex - 1));
@@ -98,12 +100,13 @@ async function runMatch() {
   setBusy(true);
   setStatus("Running match");
   try {
+    const seed = seedForAction();
     const result = await fetchJson("/api/match", {
       method: "POST",
       body: JSON.stringify({
         botA: els.botA.value,
         botB: els.botB.value,
-        seed: els.seed.value || Date.now(),
+        seed,
         timeLimitMs: configuredTimeLimit()
       })
     });
@@ -127,9 +130,10 @@ async function runTournament() {
   setBusy(true);
   setStatus("Running Elo test");
   try {
+    const seed = seedForAction();
     const result = await fetchJson("/api/tournament", {
       method: "POST",
-      body: JSON.stringify({ seed: els.seed.value || "web", gamesPerPair: 10, timeLimitMs: configuredTimeLimit() })
+      body: JSON.stringify({ seed, gamesPerPair: 10, timeLimitMs: configuredTimeLimit() })
     });
     els.tournamentResults.innerHTML = `
       <table>
@@ -605,13 +609,36 @@ function renderEvents(frame) {
     els.eventLog.innerHTML = `<li>${isDistributionFrame(frame) ? "No picks shown in this frame." : "No executed orders in this frame."}</li>`;
     return;
   }
-  els.eventLog.innerHTML = frame.events.map((event, index) => `
-    <li class="order-row ${index === frame.currentEventIndex ? "current-order" : ""}" style="--order-color: ${orderColor(event)}">
-      <span class="order-icon ${orderIconClass(event)}" aria-hidden="true"></span>
-      <span class="order-text">${escapeHtml(describeEvent(event))}</span>
+  els.eventLog.innerHTML = frame.events.map((event, index) => {
+    const targetFrameIndex = frameIndexForOrder(frame, index);
+    const disabled = targetFrameIndex === -1 ? "disabled" : "";
+    return `
+    <li>
+      <button class="order-row ${index === frame.currentEventIndex ? "current-order" : ""}" ${disabled} data-frame-index="${targetFrameIndex}" data-event-index="${index}" style="--order-color: ${orderColor(event)}" type="button">
+        <span class="order-icon ${orderIconClass(event)}" aria-hidden="true"></span>
+        <span class="order-text">${escapeHtml(describeEvent(event))}</span>
+      </button>
     </li>
-  `).join("");
+  `;
+  }).join("");
   els.eventLog.querySelector(".current-order")?.scrollIntoView({ block: "nearest" });
+}
+
+function jumpToOrder(event) {
+  const row = event.target.closest(".order-row[data-frame-index]");
+  if (!row || !els.eventLog.contains(row)) return;
+  const targetFrameIndex = Number(row.dataset.frameIndex);
+  if (!Number.isInteger(targetFrameIndex) || targetFrameIndex < 0) return;
+  stopPlayback();
+  setFrame(targetFrameIndex);
+}
+
+function frameIndexForOrder(frame, eventIndex) {
+  if (!frame.events[eventIndex]) return -1;
+  return replay.frames.findIndex((candidate) => (
+    candidate.turn === frame.turn
+    && candidate.currentEventIndex === eventIndex
+  ));
 }
 
 function renderTerritoryDetails(frame) {
@@ -746,6 +773,20 @@ function setStatus(text) {
 function configuredTimeLimit() {
   const value = Number(els.timeLimitMs.value);
   return Number.isFinite(value) && value > 0 ? value : mapPayload.rules.botTimeLimitMs;
+}
+
+function seedForAction() {
+  const current = els.seed.value.trim();
+  if (els.seedLocked.checked && current) return current;
+  const seed = generateSeed();
+  els.seed.value = seed;
+  return seed;
+}
+
+function generateSeed() {
+  const values = new Uint32Array(2);
+  crypto.getRandomValues(values);
+  return `${Date.now().toString(36)}-${values[0].toString(36)}-${values[1].toString(36)}`;
 }
 
 async function fetchJson(url, options = {}) {
