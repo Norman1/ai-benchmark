@@ -291,10 +291,12 @@ function targetValue(source, target, context) {
   const breaksLikelyBonus = enemy && bonus?.value > 0 && (bonusStats?.visibleEnemy ?? 0) >= Math.max(2, bonus.territories.length - 2);
   const expansionExits = target.neighbors.filter((id) => !context.owned.has(id)).length;
   const required = requiredAttackers(defenders);
+  const dominant = context.income >= 24 || context.mine.length >= 35;
 
   return (
     9
     + (enemy ? 30 : 0)
+    + (enemy && dominant ? 32 + Math.min(45, context.income) * 0.65 : 0)
     + (neutral ? 4 : 0)
     + (sameBonus ? 23 : 0)
     + ownedPresence * 4
@@ -315,6 +317,9 @@ function pressureAttackWorthwhile(source, target, movable, context) {
   const value = targetValue(source, target, context);
   const killedDefenders = Math.min(positiveInt(target.armies), straightRound(movable * 0.6));
   const killedAttackers = Math.min(movable, straightRound(positiveInt(target.armies) * 0.7));
+  if (target.owner === state.opponentId && (context.income >= 24 || context.mine.length >= 35)) {
+    return value > 18 && killedDefenders > 0;
+  }
   return value > 45 && killedDefenders >= killedAttackers;
 }
 
