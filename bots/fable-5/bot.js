@@ -1,10 +1,9 @@
 // Fable 5 — Warzone-style 1v1 bot.
-// v6: every army has a job. Garrisons blunt nibble attacks, holes in my
-// bonuses get retaken immediately, income deploys at the front, walls only
-// where they can actually hold, and stacks never freeze into dead capital.
+// v7: preemptive siege strikes, economy-dead hunt trigger, enemy bonus denial,
+// all pre-contact income into expansion.
 import readline from "node:readline";
 
-const VERSION = "v6";
+const VERSION = "v7";
 
 const state = {
   playerId: null,
@@ -130,6 +129,7 @@ function handlePick(message) {
 
   const scored = message.availablePicks.map((id) => ({ id, score: scorePick(id) }));
   scored.sort((a, b) => b.score - a.score);
+
   return scored.slice(0, message.requiredPicks ?? 6).map((pick) => pick.id);
 }
 
@@ -219,8 +219,8 @@ function planTurn(observation) {
     .map(([id]) => id);
   const enemyDistance = knownEnemyIds.length ? bfsTowardTargets(new Set(knownEnemyIds)) : new Map();
   const huntMode = knownEnemyIds.length > 0
-    && state.turn >= 10
-    && income >= enemyIncomeEst * 1.4;
+    && ((state.turn >= 10 && income >= enemyIncomeEst * 1.4)
+      || (state.turn >= 25 && enemyIncomeEst <= 9 && income >= 15));
 
   const virtual = new Map(mine.map((territory) => [territory.id, territory.armies]));
   const reserve = new Map(mine.map((territory) => [territory.id, 1]));
@@ -271,7 +271,38 @@ function planTurn(observation) {
   // --- 2. Expansion: complete the most efficient bonuses first.
   const plans = scoreExpansionBonuses(observation, mineSet, obsById);
   const claimed = new Set();
+
+  // Denial: a neutral hole in a bonus the enemy nearly completed is worth far
+  // more than its capture cost - it stalls their income compounding.
+  for (const bonus of state.map.bonuses) {
+    if (bonus.value < 3) continue;
+    const enemyOwned = bonus.territories.filter((tid) => believedOwner(tid) === state.enemyId).length;
+    if (enemyOwned < bonus.territories.length - 2 || enemyOwned < 2) continue;
+    for (const tid of bonus.territories) {
+      if (claimed.has(tid)) continue;
+      const observed = obsById.get(tid);
+      if (!observed?.visible || observed.owner !== null) continue;
+      const adjacentMine = observed.neighbors.filter((id) => mineSet.has(id));
+      if (!adjacentMine.length) continue;
+      const sources = adjacentMine
+        .map((id) => ({ id, spare: spare(id) }))
+        .filter((source) => source.spare > 0)
+        .sort((a, b) => b.spare - a.spare);
+      const split = planCapture(observed.armies, sources, budget);
+      if (!split) continue;
+      for (const part of split.parts) {
+        if (part.deploy > 0) deploy(part.id, part.deploy);
+        neutralAttackOrders.push({ from: part.id, to: tid, armies: part.armies, mode: "attackTransfer", key: bonus.value * 4 });
+        commit(part.id, part.armies);
+      }
+      claimed.add(tid);
+    }
+  }
   const unfunded = [];
+  // The best plan that cannot be funded reserves its deficit from the budget;
+  // lower plans may only spend the excess. Income concentrates without
+  // starving cheap captures elsewhere.
+  let reservedBudget = 0;
   for (const plan of plans) {
     if (huntMode && plan.score < 6) break;
     for (const target of plan.targets) {
@@ -280,9 +311,14 @@ function planTurn(observation) {
         .map((id) => ({ id, spare: spare(id) }))
         .filter((source) => source.spare > 0)
         .sort((a, b) => b.spare - a.spare);
-      const split = planCapture(target.armies, sources, budget);
+      const split = planCapture(target.armies, sources, Math.max(0, budget - reservedBudget));
       if (!split) {
         unfunded.push({ target, plan });
+        if (reservedBudget === 0) {
+          const need = attackersNeeded(target.armies);
+          const bestSpare = sources[0]?.spare ?? 0;
+          reservedBudget = Math.min(budget, Math.max(0, need - bestSpare));
+        }
         continue;
       }
       for (const part of split.parts) {
@@ -311,7 +347,14 @@ function planTurn(observation) {
     for (const { territory, adjacentMine, value } of enemyTargets) {
       if (claimed.has(territory.id)) continue;
       if (value < 5 && !huntMode) continue;
-      const deployGuess = territory.armies <= 2 ? 0.12 : (territory.armies <= 4 ? 0.25 : (huntMode ? 0.2 : 0.35));
+      // Big stacks are where the enemy banks its income; assume a full top-up
+      // there. Thin frontier territories rarely get more than a trickle.
+      let deployGuess;
+      if (territory.armies >= 8) deployGuess = 1.0;
+      else if (territory.armies >= 5) deployGuess = 0.5;
+      else if (territory.armies >= 3) deployGuess = 0.25;
+      else deployGuess = 0.12;
+      if (huntMode) deployGuess /= 2;
       const assumedDefense = territory.armies + Math.round(enemyIncomeEst * deployGuess);
       const need = attackersNeeded(assumedDefense);
       const sources = adjacentMine.map((id) => ({ id, spare: spare(id) })).sort((a, b) => b.spare - a.spare);
@@ -359,14 +402,45 @@ function planTurn(observation) {
     }
   }
 
-  // --- 5. Remaining budget: save up for expansion, then reinforce the front line.
-  if (budget > 0 && unfunded.length) {
-    const best = unfunded[0];
-    const sourceId = best.target.adjacentMine
-      .map((id) => ({ id, spare: spare(id) }))
-      .sort((a, b) => b.spare - a.spare)[0]?.id;
-    if (sourceId && best.plan.score >= 4) deploy(sourceId, Math.min(budget, Math.ceil(budget * 0.7)));
+  // --- 5. Remaining budget: place it where it buys income fastest - saving up
+  //     for the best local plan or pushing toward a better remote bonus.
+  const remoteObjectiveIds = [];
+  if (budget > 0 && !huntMode) {
+    const saveTarget = unfunded[0] ?? null;
+    const remote = remoteBonusStep(mineSet, claimed);
+    const saveScore = saveTarget ? saveTarget.plan.score : -1;
+    const remoteScore = remote ? remote.score : -1;
+    if (remote && remoteScore > saveScore) {
+      const sources = (state.map.adjacency.get(remote.step) ?? [])
+        .filter((id) => mineSet.has(id))
+        .map((id) => ({ id, spare: spare(id) }))
+        .sort((a, b) => b.spare - a.spare);
+      if (sources.length) {
+        remoteObjectiveIds.push(sources[0].id);
+        const split = planCapture(believedArmies(remote.step), sources, budget);
+        if (split) {
+          for (const part of split.parts) {
+            if (part.deploy > 0) deploy(part.id, part.deploy);
+            neutralAttackOrders.push({ from: part.id, to: remote.step, armies: part.armies, mode: "attackTransfer", key: 1 });
+            commit(part.id, part.armies);
+          }
+          claimed.add(remote.step);
+        } else {
+          deploy(sources[0].id, enemyAdjacent.size === 0 ? budget : Math.ceil(budget * 0.7));
+        }
+      }
+    } else if (saveTarget) {
+      const sourceId = saveTarget.target.adjacentMine
+        .map((id) => ({ id, spare: spare(id) }))
+        .sort((a, b) => b.spare - a.spare)[0]?.id;
+      if (sourceId) {
+        const share = enemyAdjacent.size === 0 ? budget : Math.ceil(budget * 0.7);
+        deploy(sourceId, share);
+        remoteObjectiveIds.push(sourceId);
+      }
+    }
   }
+
   if (budget > 0) {
     const frontline = [...mine].sort((a, b) => {
       const contactA = enemyAdjacent.has(a.id) ? 0 : 1;
@@ -394,6 +468,7 @@ function planTurn(observation) {
       }
     }
   }
+  for (const id of remoteObjectiveIds) objectives.add(id);
   for (const id of enemyAdjacent.keys()) objectives.add(id);
   if (!objectives.size) {
     if (knownEnemyIds.length) {
@@ -571,10 +646,13 @@ function enemyTargetValue(territory, mineSet, myCompletedBonusTerritories, incom
     const otherwiseMine = bonus.territories.every((tid) => tid === territory.id || mineSet.has(tid));
     if (otherwiseMine) value += 6 + bonus.value * 4; // retake a hole in my bonus
   }
-  if (territory.armies >= 8 && incomeLead >= 4) {
-    const threatensBonus = territory.neighbors?.some((tid) => myCompletedBonusTerritories.has(tid));
-    if (threatensBonus) value += territory.armies * 0.8;
-    else value += territory.armies * 0.3;
+  if (territory.armies >= 8) {
+    const threatened = (territory.neighbors ?? [])
+      .filter((tid) => myCompletedBonusTerritories.has(tid))
+      .map((tid) => state.map.bonusById.get(state.map.byId.get(tid)?.bonusId)?.value ?? 0);
+    const threat = Math.max(0, ...threatened);
+    if (incomeLead >= 4) value += territory.armies * (threat > 0 ? 0.8 : 0.3);
+    else if (incomeLead >= 0 && threat >= 4) value += territory.armies * 0.5 + threat;
   }
   value -= territory.armies * 0.4;
   return value;
@@ -597,6 +675,50 @@ function bfsTowardTargets(targetSet) {
     }
   }
   return distances;
+}
+
+// Cheapest first step toward the most valuable bonus not adjacent to my land.
+// Paths avoid enemy territory and wastelands.
+function remoteBonusStep(mineSet, claimed) {
+  const distance = new Map();
+  const firstStep = new Map();
+  const queue = [];
+  for (const id of mineSet) {
+    distance.set(id, 0);
+    firstStep.set(id, null);
+    queue.push(id);
+  }
+  for (let index = 0; index < queue.length; index += 1) {
+    const id = queue[index];
+    for (const neighborId of state.map.adjacency.get(id) ?? []) {
+      if (distance.has(neighborId)) continue;
+      if (believedOwner(neighborId) === state.enemyId) continue;
+      if (state.wastelands.has(neighborId) && believedArmies(neighborId) >= 10) continue;
+      distance.set(neighborId, (distance.get(id) ?? 0) + 1);
+      firstStep.set(neighborId, mineSet.has(id) ? neighborId : firstStep.get(id));
+      queue.push(neighborId);
+    }
+  }
+
+  let best = null;
+  for (const bonus of state.map.bonuses) {
+    const missing = bonus.territories.filter((tid) => !mineSet.has(tid));
+    if (!missing.length) continue;
+    if (missing.some((tid) => believedOwner(tid) === state.enemyId)) continue;
+    let cost = 0;
+    for (const tid of missing) cost += attackersNeeded(believedArmies(tid));
+    let entry = null;
+    for (const tid of bonus.territories) {
+      const d = distance.get(tid);
+      if (d === undefined || d < 1) continue;
+      if (!entry || d < entry.d) entry = { d, step: firstStep.get(tid) };
+    }
+    if (!entry || !entry.step || claimed.has(entry.step)) continue;
+    if (entry.d <= 1) continue; // adjacent bonuses are handled by regular plans
+    const score = (bonus.value * 12) / (cost + entry.d * 3 + 3);
+    if (!best || score > best.score) best = { bonus, step: entry.step, score };
+  }
+  return best;
 }
 
 function nextStepTowardEnemy(mineSet, knownEnemyIds) {
