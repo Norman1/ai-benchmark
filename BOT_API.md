@@ -22,7 +22,7 @@ Create a folder under `bots/` with a `bot.json` file:
 
 ## Runtime Contract
 
-- Reply before `botTimeLimitMs` expires. Current default: `350ms`.
+- Reply before `botTimeLimitMs` expires. Current default: `5000ms`.
 - Maximum stdout line length is `1MB`.
 - A malformed JSON reply, timeout, or process exit can lose the game.
 - Invalid game orders are ignored by the engine.
@@ -103,7 +103,7 @@ Turn request shape:
   "playerId": 0,
   "seed": 42,
   "turn": 1,
-  "timeLimitMs": 350,
+  "timeLimitMs": 5000,
   "observation": {
     "playerId": 0,
     "turn": 1,

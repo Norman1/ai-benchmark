@@ -1,5 +1,6 @@
 import { runMatchByIds, runTournament } from "./runner/match.js";
 import { loadBotManifests } from "./runner/bots.js";
+import { RULES } from "./engine/rules.js";
 
 const command = process.argv[2] ?? "help";
 const options = parseArgs(process.argv.slice(3));
@@ -10,21 +11,26 @@ if (command === "bots") {
 } else if (command === "match") {
   const botA = options.botA ?? options.a ?? options._[0] ?? "starter-random";
   const botB = options.botB ?? options.b ?? options._[1] ?? "starter-greedy";
-  const seed = options.seed ?? 1;
-  const result = await runMatchByIds(botA, botB, { seed, writeReplay: options.writeReplay !== "false" });
+  const seed = options.seed ?? options._[2] ?? 1;
+  const result = await runMatchByIds(botA, botB, {
+    seed,
+    writeReplay: options.writeReplay !== "false",
+    timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[3], RULES.botTimeLimitMs)
+  });
   console.log(JSON.stringify(result.summary, null, 2));
 } else if (command === "tournament") {
   const result = await runTournament({
-    gamesPerPair: Number(options.gamesPerPair ?? options.games ?? 2),
-    seed: options.seed ?? "cli-tournament",
-    writeReplay: options.writeReplay === "true"
+    gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 2),
+    seed: options.seed ?? options._[1] ?? "cli-tournament",
+    writeReplay: options.writeReplay === "true",
+    timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
   });
   console.log(JSON.stringify(result, null, 2));
 } else {
   console.log(`Usage:
   node src/cli.js bots
-  node src/cli.js match --botA starter-random --botB starter-greedy --seed 42
-  node src/cli.js tournament --gamesPerPair 4
+  node src/cli.js match --botA starter-random --botB starter-greedy --seed 42 --timeLimitMs 5000
+  node src/cli.js tournament --gamesPerPair 4 --timeLimitMs 5000
 `);
 }
 
@@ -41,4 +47,9 @@ function parseArgs(args) {
     }
   }
   return parsed;
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value ?? fallback);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }

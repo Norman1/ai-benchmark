@@ -13,8 +13,8 @@ Open `http://localhost:4173`.
 ## CLI
 
 ```powershell
-npm run match -- --botA starter-greedy --botB starter-random --seed 42
-npm run tournament -- --gamesPerPair 4
+npm run match -- --botA starter-greedy --botB starter-random --seed 42 --timeLimitMs 5000
+npm run tournament -- --gamesPerPair 4 --timeLimitMs 5000
 npm test
 ```
 
@@ -35,6 +35,7 @@ Read `BOT_API.md` before implementing a bot. It documents the stdin/stdout proto
 - base income 5 plus completed bonus income
 - no cards
 - normal fog observations for bots
+- 5 second bot request timeout by default, configurable per match
 - one army must stand guard
 - multi-attack off
 - cycle move order

@@ -3,6 +3,7 @@ const els = {
   botA: document.getElementById("botA"),
   botB: document.getElementById("botB"),
   seed: document.getElementById("seed"),
+  timeLimitMs: document.getElementById("timeLimitMs"),
   runMatch: document.getElementById("runMatch"),
   runTournament: document.getElementById("runTournament"),
   playPause: document.getElementById("playPause"),
@@ -77,6 +78,7 @@ async function boot() {
   ]);
   mapPayload = mapResponse;
   geometryPayload = geometryResponse;
+  els.timeLimitMs.value = String(mapPayload.rules.botTimeLimitMs);
   board = buildBoard(mapPayload.map, geometryPayload);
   fillBotSelects(bots);
   setStatus("Ready");
@@ -101,7 +103,8 @@ async function runMatch() {
       body: JSON.stringify({
         botA: els.botA.value,
         botB: els.botB.value,
-        seed: els.seed.value || Date.now()
+        seed: els.seed.value || Date.now(),
+        timeLimitMs: configuredTimeLimit()
       })
     });
     replay = result.replay;
@@ -126,7 +129,7 @@ async function runTournament() {
   try {
     const result = await fetchJson("/api/tournament", {
       method: "POST",
-      body: JSON.stringify({ seed: els.seed.value || "web", gamesPerPair: 2 })
+      body: JSON.stringify({ seed: els.seed.value || "web", gamesPerPair: 2, timeLimitMs: configuredTimeLimit() })
     });
     els.tournamentResults.innerHTML = `
       <table>
@@ -738,6 +741,11 @@ function setBusy(busy) {
 
 function setStatus(text) {
   els.status.textContent = text;
+}
+
+function configuredTimeLimit() {
+  const value = Number(els.timeLimitMs.value);
+  return Number.isFinite(value) && value > 0 ? value : mapPayload.rules.botTimeLimitMs;
 }
 
 async function fetchJson(url, options = {}) {

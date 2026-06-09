@@ -25,7 +25,8 @@ const server = http.createServer(async (req, res) => {
       const result = await runMatchByIds(body.botA ?? "starter-random", body.botB ?? "starter-greedy", {
         seed: body.seed ?? Date.now(),
         writeReplay: body.writeReplay ?? true,
-        maxTurns: Number(body.maxTurns ?? RULES.maxTurns)
+        maxTurns: positiveNumber(body.maxTurns, RULES.maxTurns),
+        timeLimitMs: positiveNumber(body.timeLimitMs ?? body.botTimeLimitMs, RULES.botTimeLimitMs)
       });
       return sendJson(res, result);
     }
@@ -33,8 +34,9 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const result = await runTournament({
         seed: body.seed ?? "web-tournament",
-        gamesPerPair: Number(body.gamesPerPair ?? 2),
-        writeReplay: false
+        gamesPerPair: positiveNumber(body.gamesPerPair, 2),
+        writeReplay: false,
+        timeLimitMs: positiveNumber(body.timeLimitMs ?? body.botTimeLimitMs, RULES.botTimeLimitMs)
       });
       return sendJson(res, result);
     }
@@ -70,6 +72,11 @@ function sendJson(res, data, status = 200) {
 function sendText(res, text, status = 200) {
   res.writeHead(status, { "Content-Type": "text/plain" });
   res.end(text);
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value ?? fallback);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 async function readJson(req) {

@@ -11,7 +11,7 @@ export const RULES = Object.freeze({
   offensiveKillRate: 0.6,
   defensiveKillRate: 0.7,
   maxTurns: 120,
-  botTimeLimitMs: 350,
+  botTimeLimitMs: 5000,
   maxBotLineLength: 1024 * 1024
 });
 
