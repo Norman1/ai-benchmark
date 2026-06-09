@@ -1,0 +1,7 @@
+{
+  "id": "gpt-5.5",
+  "name": "GPT-5.5",
+  "description": "Map-aware heuristic bot focused on fast bonus completion, border pressure, and efficient expansion.",
+  "command": "node",
+  "args": ["bot.js"]
+}
