@@ -3,7 +3,9 @@
 // all pre-contact income into expansion.
 import readline from "node:readline";
 
-const VERSION = "v7";
+const VERSION = "v9";
+const ENABLE_FORTRESS = false;
+const ENABLE_ASSAULT = true;
 
 const state = {
   playerId: null,
@@ -221,9 +223,12 @@ function planTurn(observation) {
   const myTotalArmies = mine.reduce((sum, territory) => sum + territory.armies, 0);
   const knownEnemyArmies = knownEnemyIds.reduce((sum, id) => sum + believedArmies(id), 0);
   const huntMode = knownEnemyIds.length > 0
-    && ((state.turn >= 10 && income >= enemyIncomeEst * 1.4)
+    && ((state.turn >= 10 && income >= enemyIncomeEst * 1.3)
       || (state.turn >= 25 && enemyIncomeEst <= 9 && income >= 15)
       || (state.turn >= 15 && myTotalArmies >= 2.5 * (knownEnemyArmies + enemyIncomeEst * 4)));
+  // Far behind on income: dig in, expand only where it is safe, and make every
+  // enemy assault overpay. A draw beats a loss; attrition can reopen the game.
+  const fortressMode = ENABLE_FORTRESS && !huntMode && state.turn >= 8 && enemyIncomeEst - income >= 10;
 
   const virtual = new Map(mine.map((territory) => [territory.id, territory.armies]));
   const reserve = new Map(mine.map((territory) => [territory.id, 1]));
@@ -316,6 +321,7 @@ function planTurn(observation) {
         .map((id) => ({ id, spare: spare(id) }))
         .filter((source) => source.spare > 0)
         .sort((a, b) => b.spare - a.spare);
+      if (fortressMode && plan.enemyTouches) continue;
       const split = planCapture(target.armies, sources, Math.max(0, budget - reservedBudget));
       if (!split) {
         unfunded.push({ target, plan });
@@ -351,7 +357,7 @@ function planTurn(observation) {
     enemyTargets.sort((a, b) => b.value - a.value);
     for (const { territory, adjacentMine, value } of enemyTargets) {
       if (claimed.has(territory.id)) continue;
-      if (value < 5 && !huntMode) continue;
+      if (value < (fortressMode ? 10 : 5) && !huntMode) continue;
       // Big stacks are where the enemy banks its income; assume a full top-up
       // there. Thin frontier territories rarely get more than a trickle.
       let deployGuess;
@@ -379,6 +385,17 @@ function planTurn(observation) {
         enemyAttackOrders.push({ from: source.id, to: territory.id, armies: send, mode: "attackTransfer" });
         commit(source.id, send);
         claimed.add(territory.id);
+      } else if (ENABLE_ASSAULT && (huntMode || incomeLead >= 4) && value >= 8 && sources.length >= 2) {
+        // Combined-arms assault: several stacks gang up on a target none of
+        // them could take alone. Lead hits soften, the last one captures.
+        const parts = planAssault(assumedDefense, sources);
+        if (parts) {
+          for (const part of parts) {
+            enemyAttackOrders.push({ from: part.id, to: territory.id, armies: part.armies, mode: "attackOnly" });
+            commit(part.id, part.armies);
+          }
+          claimed.add(territory.id);
+        }
       }
     }
   }
@@ -401,7 +418,7 @@ function planTurn(observation) {
       const needHold = defendersNeeded(predicted);
       const current = virtual.get(wall.id) ?? 0;
       const deficit = needHold - current;
-      if (deficit > Math.floor(budget * 0.6)) continue; // cannot realistically hold: stay mobile
+      if (deficit > Math.floor(budget * (fortressMode ? 1 : 0.6))) continue; // cannot realistically hold: stay mobile
       if (deficit > 0) deploy(wall.id, deficit);
       reserve.set(wall.id, Math.max(reserve.get(wall.id) ?? 1, Math.min(virtual.get(wall.id) ?? 1, needHold)));
     }
@@ -536,6 +553,34 @@ function planTurn(observation) {
   };
 }
 
+// Multi-source attack on a defended target; returns parts or null. The lead
+// hits soften the defense, the final part must capture on its own math, and
+// the whole plan must not be a pyrrhic trade.
+function planAssault(defenders, sources) {
+  let remaining = defenders;
+  let lost = 0;
+  const parts = [];
+  for (const source of sources.slice(0, 4)) {
+    if (remaining <= 0) break;
+    const finish = attackersNeeded(remaining);
+    if (source.spare >= finish) {
+      lost += straightRound(remaining * 0.7);
+      parts.push({ id: source.id, armies: finish });
+      remaining = 0;
+      break;
+    }
+    if (source.spare < 3) continue;
+    const kills = straightRound(source.spare * 0.6);
+    if (kills <= 0) continue;
+    lost += Math.min(source.spare, straightRound(remaining * 0.7));
+    parts.push({ id: source.id, armies: source.spare });
+    remaining -= kills;
+  }
+  if (remaining > 0) return null;
+  if (lost > defenders * 1.25 + 2) return null;
+  return parts;
+}
+
 function planCapture(defenders, sources, budget) {
   if (!sources.length) return null;
   const single = sources[0];
@@ -598,7 +643,7 @@ function estimateEnemyIncome() {
     estimate += (bonus.value * enemyKnown) / bonus.territories.length;
   }
   const ramp = Math.min(5 + state.turn * 1.4, 28);
-  return Math.max(estimate, Math.min(ramp, estimate + 12));
+  return Math.max(estimate, Math.min(ramp, estimate + 6));
 }
 
 function scoreExpansionBonuses(observation, mineSet, obsById) {
@@ -633,7 +678,7 @@ function scoreExpansionBonuses(observation, mineSet, obsById) {
     if (enemyInside) score *= 0.5;
     else if (enemyTouches) score *= 0.75;
     targets.sort((a, b) => attackersNeeded(a.armies) - attackersNeeded(b.armies));
-    plans.push({ bonus, score, targets });
+    plans.push({ bonus, score, targets, enemyTouches: enemyTouches || enemyInside });
   }
   plans.sort((a, b) => b.score - a.score);
   return plans;
