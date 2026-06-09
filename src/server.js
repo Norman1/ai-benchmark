@@ -34,7 +34,8 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const result = await runTournament({
         seed: body.seed ?? "web-tournament",
-        gamesPerPair: positiveNumber(body.gamesPerPair, 10),
+        gamesPerPair: positiveNumber(body.gamesPerPair, 50),
+        includeStarterBots: body.includeStarterBots === true,
         writeReplay: false,
         timeLimitMs: positiveNumber(body.timeLimitMs ?? body.botTimeLimitMs, RULES.botTimeLimitMs)
       });

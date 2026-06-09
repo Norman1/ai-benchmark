@@ -22,8 +22,9 @@ if (command === "bots") {
   console.log(JSON.stringify(result.summary, null, 2));
 } else if (command === "tournament") {
   const result = await runTournament({
-    gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 10),
+    gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 50),
     seed: options.seed ?? options._[1] ?? "cli-tournament",
+    includeStarterBots: booleanFlag(options.includeStarterBots, false),
     writeReplay: booleanFlag(options.writeReplay, false),
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
   });
@@ -62,7 +63,7 @@ if (command === "bots") {
   console.log(`Usage:
   node src/cli.js bots
   node src/cli.js match --botA starter-greedy --botB starter-greedy --seed 42 --timeLimitMs 5000
-  node src/cli.js tournament --gamesPerPair 10 --timeLimitMs 5000
+  node src/cli.js tournament --gamesPerPair 50 --timeLimitMs 5000
   node src/cli.js promote my-bot
   node src/cli.js selfplay my-bot baseline 100
 `);

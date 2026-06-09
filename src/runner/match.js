@@ -123,10 +123,11 @@ export async function runMatch(botManifests, options = {}) {
 }
 
 export async function runTournament(options = {}) {
-  const bots = await loadBotManifests(options.botsDir);
+  const loadedBots = await loadBotManifests(options.botsDir);
+  const bots = tournamentBots(loadedBots, options);
   const ratings = Object.fromEntries(bots.map((bot) => [bot.id, { rating: 1000, games: 0, wins: 0, losses: 0, draws: 0 }]));
   const games = [];
-  const gamesPerPair = options.gamesPerPair ?? 10;
+  const gamesPerPair = options.gamesPerPair ?? 50;
   for (let i = 0; i < bots.length; i += 1) {
     for (let j = i + 1; j < bots.length; j += 1) {
       for (let gameIndex = 0; gameIndex < gamesPerPair; gameIndex += 1) {
@@ -146,6 +147,12 @@ export async function runTournament(options = {}) {
       .sort((a, b) => b.rating - a.rating),
     games
   };
+}
+
+function tournamentBots(bots, options) {
+  if (options.includeStarterBots) return bots;
+  const competitiveBots = bots.filter((bot) => !bot.id.startsWith("starter-"));
+  return competitiveBots.length >= 2 ? competitiveBots : bots;
 }
 
 async function safeRequest(bot, message, failures) {

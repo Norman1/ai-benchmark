@@ -138,7 +138,7 @@ async function runTournament() {
     const seed = seedForAction();
     const result = await fetchJson("/api/tournament", {
       method: "POST",
-      body: JSON.stringify({ seed, gamesPerPair: 10, timeLimitMs: configuredTimeLimit() })
+      body: JSON.stringify({ seed, gamesPerPair: 50, timeLimitMs: configuredTimeLimit() })
     });
     els.tournamentResults.innerHTML = `
       <table>

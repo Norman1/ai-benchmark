@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RULES } from "../src/engine/rules.js";
 import { BotProcess } from "../src/runner/bot-process.js";
-import { runMatch, runMatchByIds } from "../src/runner/match.js";
+import { runMatch, runMatchByIds, runTournament } from "../src/runner/match.js";
 import { runSelfPlay } from "../src/runner/self-play.js";
 import { getBotBaseline, promoteBotBaseline } from "../src/runner/baselines.js";
 
@@ -223,6 +223,44 @@ test("bot baseline promotion overwrites one fixed self-play slot", async () => {
   }
 });
 
+test("tournament excludes starter bots when competitive bots are available", async () => {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "war-tournament-"));
+  try {
+    const botsDir = path.join(tempRoot, "bots");
+    await writeManifestBot(botsDir, "alpha");
+    await writeManifestBot(botsDir, "beta");
+    await writeManifestBot(botsDir, "starter-greedy");
+
+    const tournament = await runTournament({
+      botsDir,
+      gamesPerPair: 1,
+      maxTurns: 1,
+      timeLimitMs: 1000,
+      writeReplay: false,
+      seed: "exclude-starters"
+    });
+
+    assert.deepEqual(tournament.ratings.map((row) => row.id).sort(), ["alpha", "beta"]);
+    assert.equal(tournament.games.length, 1);
+    assert.deepEqual(tournament.games[0].bots.sort(), ["alpha", "beta"]);
+
+    const withStarters = await runTournament({
+      botsDir,
+      gamesPerPair: 1,
+      includeStarterBots: true,
+      maxTurns: 1,
+      timeLimitMs: 1000,
+      writeReplay: false,
+      seed: "include-starters"
+    });
+
+    assert.deepEqual(withStarters.ratings.map((row) => row.id).sort(), ["alpha", "beta", "starter-greedy"]);
+    assert.equal(withStarters.games.length, 3);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("starter greedy prefers capturable territories in bonuses where it already has presence", async () => {
   const bot = starterGreedyBot();
 
@@ -422,6 +460,18 @@ function starterGreedyBot() {
 
 function deploymentsByTerritory(deployments) {
   return new Map(deployments.map((deployment) => [deployment.territoryId, deployment.armies]));
+}
+
+async function writeManifestBot(botsDir, id) {
+  const botDir = path.join(botsDir, id);
+  await mkdir(botDir, { recursive: true });
+  await writeFile(path.join(botDir, "bot.json"), JSON.stringify({
+    id,
+    name: id,
+    command: process.execPath,
+    args: ["bot.js"]
+  }, null, 2), "utf8");
+  await writeFile(path.join(botDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
 }
 
 function botScript({ reverseOnSiblingRead }) {
