@@ -18,6 +18,10 @@ npm run tournament -- --gamesPerPair 4
 npm test
 ```
 
+## Building Bots
+
+Read `BOT_API.md` before implementing a bot. It documents the stdin/stdout protocol, simultaneous pick submission, cycle allocation, normal-fog observations, legal orders, timing limits, and starter bot examples.
+
 ## Current Rules
 
 - 1v1 only
