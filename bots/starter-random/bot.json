@@ -1,0 +1,7 @@
+{
+  "id": "starter-random",
+  "name": "Starter Random",
+  "description": "Random legal-ish deployments and attacks. Useful as a noisy baseline.",
+  "command": "node",
+  "args": ["bot.js"]
+}

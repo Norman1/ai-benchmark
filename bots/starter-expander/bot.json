@@ -1,0 +1,7 @@
+{
+  "id": "starter-expander",
+  "name": "Starter Expander",
+  "description": "A quieter expansion bot that avoids wasteland-size territories unless forced.",
+  "command": "node",
+  "args": ["bot.js"]
+}

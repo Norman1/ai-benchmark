@@ -1,0 +1,7 @@
+{
+  "id": "starter-greedy",
+  "name": "Starter Greedy",
+  "description": "Prioritizes efficient bonuses, expands into low neutrals, and attacks visible enemies.",
+  "command": "node",
+  "args": ["bot.js"]
+}
