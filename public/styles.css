@@ -512,7 +512,8 @@ h2 {
 }
 
 .order-icon.deploy::before,
-.order-icon.pick::before {
+.order-icon.pick::before,
+.order-icon.allocation::before {
   content: "+";
   position: absolute;
   inset: 0;
@@ -524,7 +525,8 @@ h2 {
   text-shadow: 0 1px 0 #20231f;
 }
 
-.order-icon.pick::before {
+.order-icon.pick::before,
+.order-icon.allocation::before {
   content: "";
   inset: auto;
   left: 9px;

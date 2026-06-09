@@ -389,12 +389,12 @@ export class WarGame {
   }
 
   #distributionFrames(pickOrders) {
-    const events = [];
-    for (let priority = 0; priority < RULES.picksPerPlayer; priority += 1) {
-      for (let playerId = 0; playerId < 2; playerId += 1) {
+    const pickEvents = [];
+    for (let playerId = 0; playerId < 2; playerId += 1) {
+      for (let priority = 0; priority < RULES.picksPerPlayer; priority += 1) {
         const territoryId = pickOrders[playerId]?.[priority];
         if (!territoryId) continue;
-        events.push({
+        pickEvents.push({
           type: "pick",
           playerId,
           territoryId,
@@ -402,14 +402,32 @@ export class WarGame {
         });
       }
     }
-    const frames = [this.#setupFrame("distribution", events, null, 0)];
-    for (let index = 0; index < events.length; index += 1) {
-      frames.push(this.#setupFrame("pick", events, index, index + 1));
+
+    const allocationEvents = this.allocation.allocationSteps.map((step, index) => ({
+      type: "allocation",
+      index: index + 1,
+      playerId: step.playerId,
+      territoryId: step.territoryId,
+      pickPriority: step.pickPriority,
+      fallback: step.fallback,
+      round: step.round
+    }));
+
+    const frames = [this.#setupFrame("distribution", pickEvents, null, pickEvents.length, [], pickEvents)];
+    for (let index = 0; index < allocationEvents.length; index += 1) {
+      frames.push(this.#setupFrame(
+        "allocation",
+        allocationEvents,
+        index,
+        pickEvents.length,
+        this.allocation.allocationSteps.slice(0, index + 1),
+        pickEvents
+      ));
     }
     return frames;
   }
 
-  #setupFrame(phase, events, currentEventIndex, revealedEventCount = events.length) {
+  #setupFrame(phase, events, currentEventIndex, revealedPickCount = events.length, allocatedSteps = [], pickEvents = events) {
     return {
       turn: 0,
       phase,
@@ -417,21 +435,29 @@ export class WarGame {
       incomes: [setupIncome(), setupIncome()],
       orders: [],
       events,
-      revealedEventCount,
+      pickEvents,
+      revealedPickCount,
       currentEventIndex,
-      territories: this.#distributionTerritories()
+      territories: this.#distributionTerritories(allocatedSteps)
     };
   }
 
-  #distributionTerritories() {
+  #distributionTerritories(allocatedSteps = []) {
     const wastelandSet = new Set(this.draft.wastelands);
     const distributionSet = new Set(this.draft.distribution);
-    return Object.fromEntries(this.map.territories.map((territory) => {
+    const territories = Object.fromEntries(this.map.territories.map((territory) => {
       const armies = wastelandSet.has(territory.id)
         ? RULES.wastelandArmies
         : (distributionSet.has(territory.id) ? RULES.distributionNeutralArmies : RULES.neutralArmies);
       return [territory.id, { owner: null, armies }];
     }));
+    for (const step of allocatedSteps) {
+      territories[step.territoryId] = {
+        owner: step.playerId,
+        armies: RULES.initialArmiesPerStart
+      };
+    }
+    return territories;
   }
 
   #frame(phase, orders, events, currentEventIndex = null) {

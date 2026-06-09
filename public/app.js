@@ -169,9 +169,9 @@ function renderFrame() {
     : "";
   if (isDistributionFrame(frame)) {
     els.turnTitle.textContent = "History: Territory Distribution";
-    els.historyMeta.textContent = frame.phase === "distribution"
-      ? "Distribution spots"
-      : `Picks ${frame.currentEventIndex + 1} of ${frame.events.length}`;
+    els.historyMeta.textContent = frame.phase === "allocation"
+      ? `Allocation ${frame.currentEventIndex + 1} of ${frame.events.length}`
+      : "Submitted picks";
   } else if (frame.phase === "initial") {
     els.turnTitle.textContent = `Setup: picks allocated, ${setup.wastelands.length} wastelands`;
     els.historyMeta.textContent = `Beginning of ${lastTurn} turns`;
@@ -192,9 +192,9 @@ function renderMapState(frame) {
     if (!state) continue;
     const fogged = visible && !visible.has(territory.id);
     const picked = distribution?.picksByTerritory.has(territory.id);
-    const distributionBase = distribution?.availablePicks.has(territory.id) && !distribution?.wastelands.has(territory.id);
     const owned = state.owner === 0 || state.owner === 1;
     const playerId = state.owner;
+    const distributionBase = distribution?.availablePicks.has(territory.id) && !distribution?.wastelands.has(territory.id) && !owned;
     const fill = distributionBase ? COLORS.distribution : (owned ? COLORS.player[playerId].fill : COLORS.neutral);
     const textFill = owned ? COLORS.player[playerId].text : COLORS.neutralText;
     const textStroke = owned ? COLORS.player[playerId].stroke : "rgba(245, 245, 241, 0.9)";
@@ -478,7 +478,7 @@ function renderPickMarkers(distribution) {
       const offset = offsets[index];
       const x = territory.labelPoint.x + offset.x;
       const y = territory.labelPoint.y + offset.y;
-      const current = pick.eventIndex === replay.frames[frameIndex].currentEventIndex;
+      const current = isCurrentPickMarker(pick);
       const group = svg("g", {
         class: `pick-marker ${current ? "current" : ""}`,
         "data-id": territoryId,
@@ -500,6 +500,19 @@ function renderPickMarkers(distribution) {
       board.pickLayer.append(group);
     }
   }
+}
+
+function isCurrentPickMarker(pick) {
+  const frame = replay.frames[frameIndex];
+  const event = frame.events?.[frame.currentEventIndex];
+  if (!event) return false;
+  if (event.type === "pick") return pick.eventIndex === frame.currentEventIndex;
+  if (event.type === "allocation") {
+    return event.playerId === pick.playerId
+      && event.territoryId === pick.territoryId
+      && event.pickPriority === pick.priority;
+  }
+  return false;
 }
 
 function markerOffsets(count) {
@@ -541,7 +554,8 @@ function distributionRenderState(frame) {
   if (!isDistributionFrame(frame)) return null;
   const perspective = els.perspective.value;
   const picksByTerritory = new Map();
-  const revealedEvents = frame.events.slice(0, frame.revealedEventCount ?? frame.events.length);
+  const pickEvents = frame.pickEvents ?? frame.events;
+  const revealedEvents = pickEvents.slice(0, frame.revealedPickCount ?? pickEvents.length);
   for (let eventIndex = 0; eventIndex < revealedEvents.length; eventIndex += 1) {
     const event = revealedEvents[eventIndex];
     if (event.type !== "pick") continue;
@@ -558,7 +572,7 @@ function distributionRenderState(frame) {
 }
 
 function isDistributionFrame(frame) {
-  return frame.phase === "distribution" || frame.phase === "pick";
+  return frame.phase === "distribution" || frame.phase === "allocation";
 }
 
 function renderScores(frame) {
@@ -632,6 +646,10 @@ function describeEvent(event) {
   if (event.type === "pick") {
     return `${name(event.territoryId)}`;
   }
+  if (event.type === "allocation") {
+    const priority = event.pickPriority === null ? "random" : `pick ${event.pickPriority}`;
+    return `${name(event.territoryId)} allocated (${priority})`;
+  }
   if (event.type === "deploy") {
     return `Deploy ${event.armies} to ${name(event.territoryId)}${event.fallback ? " (fallback)" : ""}`;
   }
@@ -652,7 +670,7 @@ function orderColor(event) {
 }
 
 function orderIconClass(event) {
-  if (event.type === "deploy" || event.type === "pick") return event.type;
+  if (event.type === "deploy" || event.type === "pick" || event.type === "allocation") return event.type;
   return "move";
 }
 
