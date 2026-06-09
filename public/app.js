@@ -191,13 +191,11 @@ function renderMapState(frame) {
     const state = frame.territories[territory.id];
     if (!state) continue;
     const fogged = visible && !visible.has(territory.id);
-    const picked = distribution?.picksByTerritory.get(territory.id);
-    const pickable = distribution?.availablePicks.has(territory.id) && !distribution?.wastelands.has(territory.id);
-    const owned = picked || state.owner === 0 || state.owner === 1;
-    const playerId = picked?.playerId ?? state.owner;
-    const fill = picked
-      ? COLORS.player[picked.playerId].fill
-      : (pickable ? COLORS.distribution : (owned ? COLORS.player[playerId].fill : COLORS.neutral));
+    const picked = distribution?.picksByTerritory.has(territory.id);
+    const distributionBase = distribution?.availablePicks.has(territory.id) && !distribution?.wastelands.has(territory.id);
+    const owned = state.owner === 0 || state.owner === 1;
+    const playerId = state.owner;
+    const fill = distributionBase ? COLORS.distribution : (owned ? COLORS.player[playerId].fill : COLORS.neutral);
     const textFill = owned ? COLORS.player[playerId].text : COLORS.neutralText;
     const textStroke = owned ? COLORS.player[playerId].stroke : "rgba(245, 245, 241, 0.9)";
     const selected = selectedTerritoryId === territory.id;
@@ -209,9 +207,9 @@ function renderMapState(frame) {
     territory.path.classList.toggle("selected", selected);
     territory.path.classList.toggle("bonus-highlight", selectedBonusId === territory.bonusId);
     territory.path.classList.toggle("fogged", fogged);
-    territory.path.classList.toggle("distribution", pickable && !picked);
+    territory.path.classList.toggle("distribution", distributionBase);
     territory.path.classList.toggle("pick", Boolean(picked));
-    territory.label.textContent = fogged ? "" : String(picked?.priority ?? state.armies);
+    territory.label.textContent = fogged ? "" : String(state.armies);
     territory.label.style.fill = textFill;
     territory.label.style.stroke = selected ? COLORS.selected : textStroke;
     territory.label.dataset.owner = ownerName;
@@ -221,6 +219,7 @@ function renderMapState(frame) {
     territory.label.classList.toggle("fogged", fogged);
     territory.label.classList.toggle("pick", Boolean(picked));
   }
+  renderPickMarkers(distribution);
   for (const [bonusId, marker] of board.bonusMarkers) {
     const selected = selectedBonusId === bonusId;
     marker.path.classList.toggle("selected", selected);
@@ -260,6 +259,7 @@ function buildBoard(map, geometry) {
   const selectionLayer = svg("g", { class: "selection-layer" });
   const eventLayer = svg("g", { class: "event-layer" });
   const labelLayer = svg("g", { class: "label-layer" });
+  const pickLayer = svg("g", { class: "pick-layer" });
   const defs = svg("defs");
   const arrowMarker = svg("marker", {
     id: "neighbor-arrowhead",
@@ -272,7 +272,7 @@ function buildBoard(map, geometry) {
   });
   arrowMarker.append(svg("path", { d: "M 0 0 L 10 5 L 0 10 z", class: "neighbor-arrowhead" }));
   defs.append(arrowMarker);
-  els.board.append(defs, sea, routeLayer, territoryLayer, bonusLayer, selectionLayer, eventLayer, labelLayer);
+  els.board.append(defs, sea, routeLayer, territoryLayer, bonusLayer, labelLayer, pickLayer, selectionLayer, eventLayer);
 
   const mapTerritories = new Map(map.territories.map((territory) => [territory.id, territory]));
   const geometryById = new Map(geometry.territories.map((territory) => [territory.id, territory]));
@@ -315,7 +315,7 @@ function buildBoard(map, geometry) {
   drawRouteHints(map, geometry, territories, routeLayer);
   drawBonusMarkers(map, geometry, bonusLayer, bonusMarkers);
 
-  return { territories, territoryList, bonusMarkers, selectionLayer, eventLayer };
+  return { territories, territoryList, bonusMarkers, pickLayer, selectionLayer, eventLayer };
 }
 
 function drawRouteHints(map, geometry, territories, routeLayer) {
@@ -465,6 +465,65 @@ function renderSelectionOverlay() {
   }
 }
 
+function renderPickMarkers(distribution) {
+  board.pickLayer.replaceChildren();
+  if (!distribution) return;
+
+  for (const [territoryId, picks] of distribution.picksByTerritory) {
+    const territory = board.territories.get(territoryId);
+    if (!territory) continue;
+    const offsets = markerOffsets(picks.length);
+    for (let index = 0; index < picks.length; index += 1) {
+      const pick = picks[index];
+      const offset = offsets[index];
+      const x = territory.labelPoint.x + offset.x;
+      const y = territory.labelPoint.y + offset.y;
+      const current = pick.eventIndex === replay.frames[frameIndex].currentEventIndex;
+      const group = svg("g", {
+        class: `pick-marker ${current ? "current" : ""}`,
+        "data-id": territoryId,
+        "data-player": pick.playerId
+      });
+      const star = svg("path", {
+        d: starPath(x, y, 24, 10),
+        class: "pick-star"
+      });
+      star.style.fill = COLORS.player[pick.playerId].fill;
+      star.style.stroke = COLORS.player[pick.playerId].stroke;
+      const text = svg("text", {
+        x,
+        y: y + 0.5,
+        class: "pick-star-text"
+      });
+      text.textContent = String(pick.priority);
+      group.append(star, text);
+      board.pickLayer.append(group);
+    }
+  }
+}
+
+function markerOffsets(count) {
+  if (count <= 1) return [{ x: 0, y: 0 }];
+  const radius = 9;
+  return Array.from({ length: count }, (_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / count;
+    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+}
+
+function starPath(cx, cy, outerRadius, innerRadius, points = 5) {
+  const commands = [];
+  for (let index = 0; index < points * 2; index += 1) {
+    const radius = index % 2 === 0 ? outerRadius : innerRadius;
+    const angle = -Math.PI / 2 + index * Math.PI / points;
+    const x = roundCoord(cx + Math.cos(angle) * radius);
+    const y = roundCoord(cy + Math.sin(angle) * radius);
+    commands.push(`${index === 0 ? "M" : "L"} ${x} ${y}`);
+  }
+  commands.push("Z");
+  return commands.join(" ");
+}
+
 function visibleTerritories(frame) {
   if (isDistributionFrame(frame)) return null;
   if (els.perspective.value === "all") return null;
@@ -483,10 +542,13 @@ function distributionRenderState(frame) {
   const perspective = els.perspective.value;
   const picksByTerritory = new Map();
   const revealedEvents = frame.events.slice(0, frame.revealedEventCount ?? frame.events.length);
-  for (const event of revealedEvents) {
+  for (let eventIndex = 0; eventIndex < revealedEvents.length; eventIndex += 1) {
+    const event = revealedEvents[eventIndex];
     if (event.type !== "pick") continue;
     if (perspective !== "all" && event.playerId !== Number(perspective)) continue;
-    picksByTerritory.set(event.territoryId, event);
+    const territoryPicks = picksByTerritory.get(event.territoryId) ?? [];
+    territoryPicks.push({ ...event, eventIndex });
+    picksByTerritory.set(event.territoryId, territoryPicks);
   }
   return {
     availablePicks: new Set(replay.setup.availablePicks),

@@ -343,8 +343,34 @@ h2 {
 }
 
 .selection-layer,
-.event-layer {
+.event-layer,
+.pick-layer {
   pointer-events: none;
+}
+
+.pick-marker {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72));
+}
+
+.pick-marker.current {
+  filter: drop-shadow(0 0 5px rgba(255, 228, 94, 0.92)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72));
+}
+
+.pick-star {
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.pick-star-text {
+  fill: #f7edff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(36, 17, 51, 0.88);
+  stroke-width: 3px;
 }
 
 .neighbor-arrow {
