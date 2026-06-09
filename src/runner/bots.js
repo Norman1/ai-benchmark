@@ -24,19 +24,19 @@ export async function loadBotManifestById(id, rootDir = path.resolve("bots")) {
   return bot;
 }
 
-function normalizeManifest(manifest, botDir) {
+export function normalizeManifest(manifest, botDir, overrides = {}) {
   if (!manifest.id || !manifest.command) {
     throw new Error(`Invalid bot manifest in ${botDir}: id and command are required.`);
   }
   const workingDirectory = String(manifest.workingDirectory ?? ".");
   return {
-    id: String(manifest.id),
-    name: String(manifest.name ?? manifest.id),
+    id: String(overrides.id ?? manifest.id),
+    name: String(overrides.name ?? manifest.name ?? manifest.id),
     command: String(manifest.command),
     args: Array.isArray(manifest.args) ? manifest.args.map(String) : [],
     sourceDir: path.resolve(botDir),
     workingDirectory,
     cwd: path.resolve(botDir, workingDirectory),
-    description: String(manifest.description ?? "")
+    description: String(overrides.description ?? manifest.description ?? "")
   };
 }

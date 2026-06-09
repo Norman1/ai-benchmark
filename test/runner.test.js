@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { RULES } from "../src/engine/rules.js";
 import { BotProcess } from "../src/runner/bot-process.js";
 import { runMatch, runMatchByIds } from "../src/runner/match.js";
+import { runSelfPlay } from "../src/runner/self-play.js";
+import { createBotSnapshot, listBotSnapshots } from "../src/runner/snapshots.js";
 
 test("default bot request timeout is five seconds", () => {
   assert.equal(RULES.botTimeLimitMs, 5000);
@@ -126,6 +128,56 @@ test("runner launches bots from separate source copies", async () => {
       replay.setup.submittedPicks[0],
       replay.setup.availablePicks.slice(0, 6)
     );
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("bot snapshots freeze versions for self-play against latest", async () => {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "war-selfplay-"));
+  try {
+    const botsDir = path.join(tempRoot, "bots");
+    const snapshotsDir = path.join(tempRoot, "bot-snapshots");
+    const runDir = path.join(tempRoot, "runs");
+    const botDir = path.join(botsDir, "self-bot");
+    await mkdir(botDir, { recursive: true });
+    await writeFile(path.join(botDir, "bot.json"), JSON.stringify({
+      id: "self-bot",
+      name: "Self Bot",
+      command: process.execPath,
+      args: ["bot.js"]
+    }, null, 2), "utf8");
+    await writeFile(path.join(botDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
+
+    const snapshot = await createBotSnapshot("self-bot", {
+      botsDir,
+      snapshotsDir,
+      label: "baseline"
+    });
+    const snapshots = await listBotSnapshots("self-bot", { snapshotsDir });
+
+    assert.equal(snapshot.id, "0001-baseline");
+    assert.equal(snapshots.length, 1);
+    assert.equal(snapshots[0].id, snapshot.id);
+
+    await writeFile(path.join(botDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
+    const result = await runSelfPlay("self-bot", {
+      botsDir,
+      snapshotsDir,
+      runDir,
+      against: "latest",
+      games: 2,
+      maxTurns: 1,
+      timeLimitMs: 1000,
+      seed: "selfplay-test"
+    });
+
+    assert.equal(result.opponents[0].snapshotId, "0001-baseline");
+    assert.equal(result.games.length, 2);
+    assert.deepEqual(result.games.map((game) => game.candidatePlayer), [0, 1]);
+    assert.equal(result.totals.games, 2);
+    assert.equal(path.dirname(result.runPath), runDir);
+    assert.match(path.basename(result.runPath), /\.json$/);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

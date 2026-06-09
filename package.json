@@ -7,6 +7,9 @@
     "start": "node src/server.js",
     "match": "node src/cli.js match",
     "tournament": "node src/cli.js tournament",
+    "snapshot": "node src/cli.js snapshot",
+    "snapshots": "node src/cli.js snapshots",
+    "selfplay": "node src/cli.js selfplay",
     "test": "node --test"
   }
 }

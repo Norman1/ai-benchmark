@@ -2,7 +2,7 @@
 
 Bots are black-box processes. The engine launches each bot from its own `bot.json` manifest and sends one JSON object per line on stdin. The bot must write exactly one JSON reply per request on stdout. Use stderr for logs.
 
-Each bot should live in its own folder. For each match, the runner copies every bot into its own random temporary working directory and launches the process from that copy, so ordinary relative-path inspection cannot see the opponent's source folder. This is practical source separation for a local/private benchmark, not a hardened OS security sandbox against malicious code.
+Each bot should live in its own folder. For each match, the runner copies every bot into its own random temporary working directory and launches the process from that copy, so ordinary relative-path inspection cannot see the opponent's source folder. This is practical source separation for a local/private benchmark, not a hardened OS security sandbox against malicious code. Independent bot development is expected to happen on separate git branches; comparing bots happens after those bot folders are intentionally brought into one checkout.
 
 ## Manifest
 
@@ -203,3 +203,14 @@ Use the starter bots as runnable examples:
 - `bots/starter-random`
 - `bots/starter-expander`
 - `bots/starter-greedy`
+
+## Self-Play Snapshots
+
+Use snapshots to freeze previous versions of your own bot and test a candidate against them:
+
+```powershell
+npm run snapshot -- my-bot baseline
+npm run selfplay -- my-bot latest 100
+```
+
+The current live bot is the candidate. Snapshot opponents are frozen copies under `bot-snapshots/`. The self-play command side-swaps games automatically and writes a run report under `runs/selfplay/` unless disabled with `--writeRun false`.

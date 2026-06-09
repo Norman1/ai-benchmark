@@ -1,5 +1,7 @@
 import { runMatchByIds, runTournament } from "./runner/match.js";
 import { loadBotManifests } from "./runner/bots.js";
+import { runSelfPlay } from "./runner/self-play.js";
+import { createBotSnapshot, listBotSnapshots } from "./runner/snapshots.js";
 import { RULES } from "./engine/rules.js";
 
 const command = process.argv[2] ?? "help";
@@ -26,11 +28,43 @@ if (command === "bots") {
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
   });
   console.log(JSON.stringify(result, null, 2));
+} else if (command === "snapshot") {
+  const botId = options.bot ?? options._[0] ?? "starter-greedy";
+  const result = await createBotSnapshot(botId, {
+    label: options.label ?? options._[1],
+    snapshotId: options.id ?? options.snapshotId,
+    botsDir: options.botsDir,
+    snapshotsDir: options.snapshotsDir ?? options._[2]
+  });
+  console.log(JSON.stringify(result, null, 2));
+} else if (command === "snapshots") {
+  const botId = options.bot ?? options._[0] ?? "starter-greedy";
+  const result = await listBotSnapshots(botId, {
+    snapshotsDir: options.snapshotsDir ?? options._[1]
+  });
+  console.log(JSON.stringify(result, null, 2));
+} else if (command === "selfplay") {
+  const botId = options.bot ?? options._[0] ?? "starter-greedy";
+  const result = await runSelfPlay(botId, {
+    against: options.against ?? options._[1] ?? "latest",
+    games: positiveNumber(options.games ?? options.gamesPerOpponent ?? options._[2], 20),
+    seed: options.seed ?? options._[3] ?? "cli-selfplay",
+    writeReplay: options.writeReplay === "true",
+    writeRun: options.writeRun !== "false",
+    botsDir: options.botsDir,
+    snapshotsDir: options.snapshotsDir ?? options._[6],
+    runDir: options.runDir ?? options._[7],
+    maxTurns: positiveNumber(options.maxTurns ?? options._[4], RULES.maxTurns),
+    timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[5], RULES.botTimeLimitMs)
+  });
+  console.log(JSON.stringify(result, null, 2));
 } else {
   console.log(`Usage:
   node src/cli.js bots
   node src/cli.js match --botA starter-random --botB starter-greedy --seed 42 --timeLimitMs 5000
   node src/cli.js tournament --gamesPerPair 10 --timeLimitMs 5000
+  node src/cli.js snapshot my-bot baseline
+  node src/cli.js selfplay my-bot latest 100
 `);
 }
 
