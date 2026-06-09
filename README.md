@@ -15,8 +15,8 @@ Open `http://localhost:4173`.
 ```powershell
 npm run match -- --botA starter-greedy --botB starter-random --seed 42 --timeLimitMs 5000
 npm run tournament -- --gamesPerPair 10 --timeLimitMs 5000
-npm run snapshot -- starter-greedy baseline
-npm run selfplay -- starter-greedy latest 100
+npm run promote -- starter-greedy
+npm run selfplay -- starter-greedy baseline 100
 npm test
 ```
 
@@ -36,21 +36,21 @@ The intended private-benchmark workflow is git based:
 
 This prevents accidental source peeking during ordinary development. A bot author could still actively inspect other branches or git history if they tried; that is outside the threat model for this project.
 
-For self-play, freeze a previous bot version as a local snapshot:
+For self-play, promote the current bot into its local baseline slot:
 
 ```powershell
-npm run snapshot -- my-bot baseline
-npm run selfplay -- my-bot latest 100
+npm run promote -- my-bot
+npm run selfplay -- my-bot baseline 100
 ```
 
-Snapshots are copied to `bot-snapshots/<bot-id>/<snapshot-id>/`. Self-play run reports are written to `runs/selfplay/<bot-id>/` unless `--writeRun false` is passed. Both directories are local generated artifacts and ignored by git by default.
+Promotion copies `bots/<bot-id>/` to `bot-baselines/<bot-id>/baseline/`, replacing the previous baseline instead of creating an ever-growing history. Self-play run reports are written to `runs/selfplay/<bot-id>/` unless `--writeRun false` is passed. Both directories are local generated artifacts and ignored by git by default.
 
 Useful self-play variants:
 
 ```powershell
-npm run snapshots -- my-bot
-npm run selfplay -- my-bot all 20
-node src/cli.js selfplay --bot my-bot --against 0001-baseline --games 50 --writeReplay true
+npm run baseline -- my-bot
+npm run selfplay -- my-bot baseline 20
+node src/cli.js selfplay --bot my-bot --against baseline --games 50 --writeReplay true
 ```
 
 ## Current Rules

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,7 @@ import { RULES } from "../src/engine/rules.js";
 import { BotProcess } from "../src/runner/bot-process.js";
 import { runMatch, runMatchByIds } from "../src/runner/match.js";
 import { runSelfPlay } from "../src/runner/self-play.js";
-import { createBotSnapshot, listBotSnapshots } from "../src/runner/snapshots.js";
+import { getBotBaseline, promoteBotBaseline } from "../src/runner/baselines.js";
 
 test("default bot request timeout is five seconds", () => {
   assert.equal(RULES.botTimeLimitMs, 5000);
@@ -133,11 +133,11 @@ test("runner launches bots from separate source copies", async () => {
   }
 });
 
-test("bot snapshots freeze versions for self-play against latest", async () => {
+test("bot baseline promotion overwrites one fixed self-play slot", async () => {
   const tempRoot = await mkdtemp(path.join(tmpdir(), "war-selfplay-"));
   try {
     const botsDir = path.join(tempRoot, "bots");
-    const snapshotsDir = path.join(tempRoot, "bot-snapshots");
+    const baselinesDir = path.join(tempRoot, "bot-baselines");
     const runDir = path.join(tempRoot, "runs");
     const botDir = path.join(botsDir, "self-bot");
     await mkdir(botDir, { recursive: true });
@@ -148,31 +148,42 @@ test("bot snapshots freeze versions for self-play against latest", async () => {
       args: ["bot.js"]
     }, null, 2), "utf8");
     await writeFile(path.join(botDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
+    await writeFile(path.join(botDir, "version.txt"), "one\n", "utf8");
 
-    const snapshot = await createBotSnapshot("self-bot", {
+    const firstPromotion = await promoteBotBaseline("self-bot", {
       botsDir,
-      snapshotsDir,
-      label: "baseline"
+      baselinesDir
     });
-    const snapshots = await listBotSnapshots("self-bot", { snapshotsDir });
+    await writeFile(path.join(firstPromotion.path, "stale.txt"), "remove me\n", "utf8");
+    await writeFile(path.join(botDir, "version.txt"), "two\n", "utf8");
+    const secondPromotion = await promoteBotBaseline("self-bot", {
+      botsDir,
+      baselinesDir
+    });
+    const baseline = await getBotBaseline("self-bot", { baselinesDir });
+    const baselineEntries = await readdir(path.join(baselinesDir, "self-bot"));
 
-    assert.equal(snapshot.id, "0001-baseline");
-    assert.equal(snapshots.length, 1);
-    assert.equal(snapshots[0].id, snapshot.id);
+    assert.equal(firstPromotion.id, "baseline");
+    assert.equal(secondPromotion.id, "baseline");
+    assert.equal(firstPromotion.path, secondPromotion.path);
+    assert.deepEqual(baselineEntries, ["baseline"]);
+    assert.equal(baseline.id, "baseline");
+    assert.equal(await readFile(path.join(secondPromotion.path, "version.txt"), "utf8"), "two\n");
+    await assert.rejects(readFile(path.join(secondPromotion.path, "stale.txt"), "utf8"));
 
     await writeFile(path.join(botDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
     const result = await runSelfPlay("self-bot", {
       botsDir,
-      snapshotsDir,
+      baselinesDir,
       runDir,
-      against: "latest",
+      against: "baseline",
       games: 2,
       maxTurns: 1,
       timeLimitMs: 1000,
       seed: "selfplay-test"
     });
 
-    assert.equal(result.opponents[0].snapshotId, "0001-baseline");
+    assert.equal(result.opponents[0].baselineId, "baseline");
     assert.equal(result.games.length, 2);
     assert.deepEqual(result.games.map((game) => game.candidatePlayer), [0, 1]);
     assert.equal(result.totals.games, 2);

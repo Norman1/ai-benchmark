@@ -2,12 +2,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadBotManifestById } from "./bots.js";
 import { runMatch } from "./match.js";
-import { resolveSelfPlayOpponents } from "./snapshots.js";
+import { resolveSelfPlayOpponents } from "./baselines.js";
 import { RULES } from "../engine/rules.js";
 
 export async function runSelfPlay(botId, options = {}) {
   const candidate = await loadBotManifestById(botId, options.botsDir);
-  const opponents = await resolveSelfPlayOpponents(botId, options.against ?? "latest", options);
+  const opponents = await resolveSelfPlayOpponents(botId, options.against ?? "baseline", options);
   const gamesPerOpponent = positiveInteger(options.games ?? options.gamesPerOpponent, 20);
   const seedBase = String(options.seed ?? "selfplay");
   const games = [];
@@ -16,12 +16,12 @@ export async function runSelfPlay(botId, options = {}) {
 
   for (const opponent of opponents) {
     const opponentStats = emptyStats();
-    byOpponent[opponent.snapshot.id] = opponentStats;
+    byOpponent[opponent.baseline.id] = opponentStats;
 
     for (let gameIndex = 0; gameIndex < gamesPerOpponent; gameIndex += 1) {
       const candidatePlayer = gameIndex % 2 === 0 ? 0 : 1;
       const pair = candidatePlayer === 0 ? [candidate, opponent] : [opponent, candidate];
-      const seed = `${seedBase}:${botId}:${opponent.snapshot.id}:${gameIndex}`;
+      const seed = `${seedBase}:${botId}:${opponent.baseline.id}:${gameIndex}`;
       const match = await runMatch(pair, {
         ...options,
         seed,
@@ -34,7 +34,7 @@ export async function runSelfPlay(botId, options = {}) {
       recordOutcome(opponentStats, outcome);
       games.push({
         index: games.length + 1,
-        opponentSnapshot: opponent.snapshot.id,
+        opponentBaseline: opponent.baseline.id,
         candidatePlayer,
         seed: match.summary.seed,
         outcome,
@@ -50,13 +50,13 @@ export async function runSelfPlay(botId, options = {}) {
       name: candidate.name,
       sourceDir: candidate.sourceDir
     },
-    against: options.against ?? "latest",
+    against: options.against ?? "baseline",
     opponents: opponents.map((opponent) => ({
       id: opponent.id,
       name: opponent.name,
-      snapshotId: opponent.snapshot.id,
-      path: opponent.snapshot.path,
-      git: opponent.snapshot.git
+      baselineId: opponent.baseline.id,
+      path: opponent.baseline.path,
+      git: opponent.baseline.git
     })),
     gamesPerOpponent,
     totals,

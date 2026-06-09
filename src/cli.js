@@ -1,7 +1,7 @@
 import { runMatchByIds, runTournament } from "./runner/match.js";
 import { loadBotManifests } from "./runner/bots.js";
 import { runSelfPlay } from "./runner/self-play.js";
-import { createBotSnapshot, listBotSnapshots } from "./runner/snapshots.js";
+import { getBotBaseline, promoteBotBaseline } from "./runner/baselines.js";
 import { RULES } from "./engine/rules.js";
 
 const command = process.argv[2] ?? "help";
@@ -28,31 +28,31 @@ if (command === "bots") {
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
   });
   console.log(JSON.stringify(result, null, 2));
-} else if (command === "snapshot") {
+} else if (command === "promote") {
   const botId = options.bot ?? options._[0] ?? "starter-greedy";
-  const result = await createBotSnapshot(botId, {
-    label: options.label ?? options._[1],
-    snapshotId: options.id ?? options.snapshotId,
+  const result = await promoteBotBaseline(botId, {
+    baselineId: options.baseline ?? options.id ?? options._[1] ?? "baseline",
     botsDir: options.botsDir,
-    snapshotsDir: options.snapshotsDir ?? options._[2]
+    baselinesDir: options.baselinesDir ?? options._[2]
   });
   console.log(JSON.stringify(result, null, 2));
-} else if (command === "snapshots") {
+} else if (command === "baseline") {
   const botId = options.bot ?? options._[0] ?? "starter-greedy";
-  const result = await listBotSnapshots(botId, {
-    snapshotsDir: options.snapshotsDir ?? options._[1]
+  const result = await getBotBaseline(botId, {
+    baselineId: options.baseline ?? options.id ?? options._[1] ?? "baseline",
+    baselinesDir: options.baselinesDir ?? options._[2]
   });
   console.log(JSON.stringify(result, null, 2));
 } else if (command === "selfplay") {
   const botId = options.bot ?? options._[0] ?? "starter-greedy";
   const result = await runSelfPlay(botId, {
-    against: options.against ?? options._[1] ?? "latest",
+    against: options.against ?? options._[1] ?? "baseline",
     games: positiveNumber(options.games ?? options.gamesPerOpponent ?? options._[2], 20),
     seed: options.seed ?? options._[3] ?? "cli-selfplay",
     writeReplay: options.writeReplay === "true",
     writeRun: options.writeRun !== "false",
     botsDir: options.botsDir,
-    snapshotsDir: options.snapshotsDir ?? options._[6],
+    baselinesDir: options.baselinesDir ?? options._[6],
     runDir: options.runDir ?? options._[7],
     maxTurns: positiveNumber(options.maxTurns ?? options._[4], RULES.maxTurns),
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[5], RULES.botTimeLimitMs)
@@ -63,8 +63,8 @@ if (command === "bots") {
   node src/cli.js bots
   node src/cli.js match --botA starter-random --botB starter-greedy --seed 42 --timeLimitMs 5000
   node src/cli.js tournament --gamesPerPair 10 --timeLimitMs 5000
-  node src/cli.js snapshot my-bot baseline
-  node src/cli.js selfplay my-bot latest 100
+  node src/cli.js promote my-bot
+  node src/cli.js selfplay my-bot baseline 100
 `);
 }
 

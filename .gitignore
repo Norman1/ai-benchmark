@@ -1,4 +1,4 @@
 replays/*.json
 .logs/
-bot-snapshots/
+bot-baselines/
 runs/

@@ -204,13 +204,13 @@ Use the starter bots as runnable examples:
 - `bots/starter-expander`
 - `bots/starter-greedy`
 
-## Self-Play Snapshots
+## Self-Play Baseline
 
-Use snapshots to freeze previous versions of your own bot and test a candidate against them:
+Use promotion to replace your bot's local baseline, then test the current live candidate against that baseline:
 
 ```powershell
-npm run snapshot -- my-bot baseline
-npm run selfplay -- my-bot latest 100
+npm run promote -- my-bot
+npm run selfplay -- my-bot baseline 100
 ```
 
-The current live bot is the candidate. Snapshot opponents are frozen copies under `bot-snapshots/`. The self-play command side-swaps games automatically and writes a run report under `runs/selfplay/` unless disabled with `--writeRun false`.
+The current live bot is the candidate. The baseline opponent is a copied bot package under `bot-baselines/<bot-id>/baseline/`. Running `promote` again overwrites that same baseline slot instead of growing history. The self-play command side-swaps games automatically and writes a run report under `runs/selfplay/` unless disabled with `--writeRun false`.

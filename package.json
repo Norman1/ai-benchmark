@@ -7,8 +7,8 @@
     "start": "node src/server.js",
     "match": "node src/cli.js match",
     "tournament": "node src/cli.js tournament",
-    "snapshot": "node src/cli.js snapshot",
-    "snapshots": "node src/cli.js snapshots",
+    "promote": "node src/cli.js promote",
+    "baseline": "node src/cli.js baseline",
     "selfplay": "node src/cli.js selfplay",
     "test": "node --test"
   }
