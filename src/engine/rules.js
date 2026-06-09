@@ -12,8 +12,7 @@ export const RULES = Object.freeze({
   defensiveKillRate: 0.7,
   maxTurns: 120,
   botTimeLimitMs: 350,
-  maxBotLineLength: 1024 * 1024,
-  mapImage: "/assets/medium-earth-clean.png"
+  maxBotLineLength: 1024 * 1024
 });
 
 export function straightRound(value) {

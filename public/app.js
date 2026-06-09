@@ -19,11 +19,27 @@ const els = {
   tournamentResults: document.getElementById("tournamentResults")
 };
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+const COLORS = {
+  sea: "#0a1111",
+  route: "rgba(215, 199, 55, 0.65)",
+  event: "rgba(246, 222, 94, 0.88)",
+  neutral: "#cfcfca",
+  neutralText: "#111111",
+  selected: "#ffe276",
+  player: [
+    { fill: "#6f18b7", text: "#f8f0ff", stroke: "#241133" },
+    { fill: "#0aa3ad", text: "#f2feff", stroke: "#06363c" }
+  ]
+};
+
 let mapPayload = null;
+let geometryPayload = null;
 let replay = null;
 let frameIndex = 0;
 let selectedTerritoryId = null;
 let timer = null;
+let board = null;
 
 els.runMatch.addEventListener("click", runMatch);
 els.runTournament.addEventListener("click", runTournament);
@@ -36,13 +52,15 @@ await boot();
 
 async function boot() {
   setStatus("Loading");
-  const [bots, mapResponse] = await Promise.all([
+  const [bots, mapResponse, geometryResponse] = await Promise.all([
     fetchJson("/api/bots"),
-    fetchJson("/api/map")
+    fetchJson("/api/map"),
+    fetchJson("/assets/medium-earth-geometry.json")
   ]);
   mapPayload = mapResponse;
+  geometryPayload = geometryResponse;
+  board = buildBoard(mapPayload.map, geometryPayload);
   fillBotSelects(bots);
-  drawEmptyBoard();
   setStatus("Ready");
   await runMatch();
 }
@@ -114,16 +132,8 @@ async function runTournament() {
   }
 }
 
-function drawEmptyBoard() {
-  const map = mapPayload.map;
-  els.board.innerHTML = `
-    <rect class="sea" x="0" y="0" width="${map.viewBox.width}" height="${map.viewBox.height}"></rect>
-    <image class="map-image" href="${mapPayload.rules.mapImage}" x="0" y="0" width="${map.viewBox.width}" height="${map.viewBox.height}" preserveAspectRatio="none"></image>
-  `;
-}
-
 function setFrame(nextIndex) {
-  if (!replay) return;
+  if (!replay || !board) return;
   frameIndex = Math.max(0, Math.min(replay.frames.length - 1, nextIndex));
   els.scrubber.value = String(frameIndex);
   renderFrame();
@@ -131,60 +141,8 @@ function setFrame(nextIndex) {
 
 function renderFrame() {
   const frame = replay.frames[frameIndex];
-  const map = replay.map;
   const setup = replay.setup;
-  const wastelands = new Set(setup.wastelands);
-
-  const territoryById = new Map(map.territories.map((territory) => [territory.id, territory]));
-  const eventEdges = frame.events
-    .filter((event) => event.from && event.to)
-    .map((event) => {
-      const from = territoryById.get(event.from);
-      const to = territoryById.get(event.to);
-      if (!from || !to) return "";
-      return `<line class="event-edge" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"></line>`;
-    })
-    .join("");
-
-  const ownerPatches = map.territories.map((territory) => {
-    const state = frame.territories[territory.id];
-    if (state.owner !== 0 && state.owner !== 1) return "";
-    const rx = territory.bonusId === "zero" ? 18 : 28;
-    const ry = territory.bonusId === "zero" ? 14 : 22;
-    return `<ellipse class="owner-patch p${state.owner}" cx="${territory.x}" cy="${territory.y}" rx="${rx}" ry="${ry}"></ellipse>`;
-  }).join("");
-
-  const markers = map.territories.map((territory) => {
-    const state = frame.territories[territory.id];
-    const ownerClass = state.owner === 0 ? "p0" : state.owner === 1 ? "p1" : "neutral";
-    const classes = [
-      "marker",
-      ownerClass,
-      wastelands.has(territory.id) && state.owner === null ? "wasteland" : "",
-      selectedTerritoryId === territory.id ? "selected" : ""
-    ].filter(Boolean).join(" ");
-    const radius = Math.max(13, Math.min(24, 11 + Math.sqrt(state.armies) * 2.2));
-    return `
-      <g class="${classes}" data-territory-id="${territory.id}" transform="translate(${territory.x} ${territory.y})">
-        <circle class="outer" r="${radius + 3}"></circle>
-        <circle class="inner" r="${radius}"></circle>
-        <text>${state.armies}</text>
-      </g>`;
-  }).join("");
-
-  els.board.innerHTML = `
-    <rect class="sea" x="0" y="0" width="${mapPayload.map.viewBox.width}" height="${mapPayload.map.viewBox.height}"></rect>
-    <image class="map-image" href="${mapPayload.rules.mapImage}" x="0" y="0" width="${mapPayload.map.viewBox.width}" height="${mapPayload.map.viewBox.height}" preserveAspectRatio="none"></image>
-    ${ownerPatches}
-    ${eventEdges}
-    ${markers}
-  `;
-  els.board.querySelectorAll(".marker").forEach((marker) => {
-    marker.addEventListener("click", () => {
-      selectedTerritoryId = marker.dataset.territoryId;
-      renderFrame();
-    });
-  });
+  renderMapState(frame);
 
   els.turnTitle.textContent = frame.phase === "initial"
     ? `Setup: picks allocated, ${setup.wastelands.length} wastelands`
@@ -192,6 +150,143 @@ function renderFrame() {
   renderScores(frame);
   renderEvents(frame);
   renderTerritoryDetails(frame);
+}
+
+function renderMapState(frame) {
+  for (const territory of board.territoryList) {
+    const state = frame.territories[territory.id];
+    if (!state) continue;
+    const owned = state.owner === 0 || state.owner === 1;
+    const fill = owned ? COLORS.player[state.owner].fill : COLORS.neutral;
+    const textFill = owned ? COLORS.player[state.owner].text : COLORS.neutralText;
+    const textStroke = owned ? COLORS.player[state.owner].stroke : "rgba(245, 245, 241, 0.9)";
+    const selected = selectedTerritoryId === territory.id;
+    const ownerName = owned ? `player-${state.owner}` : "neutral";
+
+    territory.path.style.fill = fill;
+    territory.path.dataset.owner = ownerName;
+    territory.path.dataset.armies = String(state.armies);
+    territory.path.classList.toggle("selected", selected);
+    territory.label.textContent = String(state.armies);
+    territory.label.style.fill = textFill;
+    territory.label.style.stroke = selected ? COLORS.selected : textStroke;
+    territory.label.dataset.owner = ownerName;
+    territory.label.dataset.armies = String(state.armies);
+    territory.label.classList.toggle("selected", selected);
+  }
+  renderEventEdges(frame);
+}
+
+function renderEventEdges(frame) {
+  board.eventLayer.replaceChildren();
+  for (const event of frame.events) {
+    if (!event.from || !event.to) continue;
+    const from = board.territories.get(event.from);
+    const to = board.territories.get(event.to);
+    if (!from || !to) continue;
+    const line = svg("line", {
+      x1: from.labelPoint.x,
+      y1: from.labelPoint.y,
+      x2: to.labelPoint.x,
+      y2: to.labelPoint.y,
+      class: "event-edge"
+    });
+    board.eventLayer.append(line);
+  }
+}
+
+function buildBoard(map, geometry) {
+  const viewBox = geometry.viewBox ?? map.viewBox;
+  els.board.setAttribute("viewBox", `0 0 ${viewBox.width} ${viewBox.height}`);
+  els.board.replaceChildren();
+
+  const sea = svg("rect", { x: 0, y: 0, width: viewBox.width, height: viewBox.height, class: "sea" });
+  const routeLayer = svg("g", { class: "route-layer" });
+  const territoryLayer = svg("g", { class: "territory-layer" });
+  const bonusLayer = svg("g", { class: "bonus-layer" });
+  const eventLayer = svg("g", { class: "event-layer" });
+  const labelLayer = svg("g", { class: "label-layer" });
+  els.board.append(sea, routeLayer, territoryLayer, bonusLayer, eventLayer, labelLayer);
+
+  const mapTerritories = new Map(map.territories.map((territory) => [territory.id, territory]));
+  const geometryById = new Map(geometry.territories.map((territory) => [territory.id, territory]));
+  const territories = new Map();
+  const territoryList = [];
+
+  for (const territory of map.territories) {
+    const territoryGeometry = geometryById.get(territory.id);
+    if (!territoryGeometry) continue;
+    const path = svg("path", {
+      d: territoryGeometry.path,
+      class: "territory",
+      "data-id": territory.id
+    });
+    path.style.stroke = territory.color;
+    path.addEventListener("click", () => selectTerritory(territory.id));
+
+    const label = svg("text", {
+      x: territoryGeometry.label.x,
+      y: territoryGeometry.label.y,
+      class: "army-label",
+      "data-id": territory.id
+    });
+    label.addEventListener("click", () => selectTerritory(territory.id));
+    territoryLayer.append(path);
+    labelLayer.append(label);
+
+    const merged = {
+      ...territory,
+      path,
+      label,
+      labelPoint: territoryGeometry.label
+    };
+    territories.set(territory.id, merged);
+    territoryList.push(merged);
+  }
+
+  drawRouteHints(map, territories, routeLayer);
+  drawBonusMarkers(map, geometry, bonusLayer);
+
+  return { territories, territoryList, eventLayer };
+}
+
+function drawRouteHints(map, territories, routeLayer) {
+  for (const [fromId, toId] of map.edges) {
+    const from = territories.get(fromId);
+    const to = territories.get(toId);
+    if (!from || !to) continue;
+    const distance = Math.hypot(from.labelPoint.x - to.labelPoint.x, from.labelPoint.y - to.labelPoint.y);
+    if (distance < 85) continue;
+    routeLayer.append(svg("line", {
+      x1: from.labelPoint.x,
+      y1: from.labelPoint.y,
+      x2: to.labelPoint.x,
+      y2: to.labelPoint.y,
+      class: "route"
+    }));
+  }
+}
+
+function drawBonusMarkers(map, geometry, bonusLayer) {
+  const bonusById = new Map(map.bonuses.map((bonus) => [bonus.id, bonus]));
+  for (const marker of geometry.bonusLinks) {
+    const bonus = bonusById.get(marker.id);
+    if (!bonus) continue;
+    const path = svg("path", { d: marker.path, class: "bonus-marker" });
+    path.style.fill = bonus.color;
+    const text = svg("text", {
+      x: marker.label.x,
+      y: marker.label.y + 0.8,
+      class: "bonus-marker-text"
+    });
+    text.textContent = String(bonus.value);
+    bonusLayer.append(path, text);
+  }
+}
+
+function selectTerritory(territoryId) {
+  selectedTerritoryId = territoryId;
+  if (replay) renderFrame();
 }
 
 function renderScores(frame) {
@@ -226,11 +321,12 @@ function renderEvents(frame) {
 
 function renderTerritoryDetails(frame) {
   if (!selectedTerritoryId) {
-    els.territoryDetails.textContent = "Select a marker on the board.";
+    els.territoryDetails.textContent = "Select a territory on the board.";
     return;
   }
-  const territory = replay.map.territories.find((candidate) => candidate.id === selectedTerritoryId);
+  const territory = board.territories.get(selectedTerritoryId);
   const state = frame.territories[selectedTerritoryId];
+  if (!territory || !state) return;
   const owner = state.owner === null ? "Neutral" : replay.players[state.owner];
   const neighbors = replay.map.adjacency[selectedTerritoryId] ?? [];
   els.territoryDetails.innerHTML = `
@@ -269,7 +365,7 @@ function describeEvent(event) {
 }
 
 function name(territoryId) {
-  return replay.map.territories.find((territory) => territory.id === territoryId)?.name ?? territoryId;
+  return board.territories.get(territoryId)?.name ?? territoryId;
 }
 
 function togglePlayback() {
@@ -310,6 +406,14 @@ async function fetchJson(url, options = {}) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error ?? response.statusText);
   return data;
+}
+
+function svg(tagName, attributes = {}) {
+  const node = document.createElementNS(SVG_NS, tagName);
+  for (const [key, value] of Object.entries(attributes)) {
+    node.setAttribute(key, value);
+  }
+  return node;
 }
 
 function escapeHtml(value) {

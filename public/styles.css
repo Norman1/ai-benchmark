@@ -10,7 +10,6 @@
   --red: #d4574f;
   --green: #5b9c64;
   --neutral: #c8c5ba;
-  --waste: #202020;
 }
 
 * {
@@ -195,10 +194,9 @@ h2 {
   display: inline-block;
 }
 
-.legend .p0 { background: var(--blue); }
-.legend .p1 { background: var(--red); }
+.legend .p0 { background: #6b00b8; }
+.legend .p1 { background: #009aa8; }
 .legend .neutral { background: var(--neutral); }
-.legend .waste { background: var(--waste); border: 1px solid #888; }
 
 .board-wrap {
   min-height: 0;
@@ -212,76 +210,79 @@ h2 {
 #board {
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1000 / 580;
   max-height: none;
   display: block;
+  cursor: default;
+  background: #070b0b;
+  user-select: none;
 }
 
 .sea {
-  fill: #304f51;
+  fill: #070b0b;
 }
 
-.map-image {
-  opacity: 1;
-}
-
-.edge {
-  stroke: rgba(222, 183, 68, 0.16);
-  stroke-width: 2;
-  pointer-events: none;
-}
-
-.event-edge {
-  stroke: #f0d979;
-  stroke-width: 5;
+.route {
+  stroke: rgba(215, 199, 55, 0.66);
+  stroke-width: 1.7;
   stroke-linecap: round;
-  opacity: 0.85;
   pointer-events: none;
 }
 
-.owner-patch {
-  pointer-events: none;
-  opacity: 0.38;
-  mix-blend-mode: multiply;
-}
-
-.owner-patch.p0 {
-  fill: #2864f0;
-}
-
-.owner-patch.p1 {
-  fill: #d72035;
-}
-
-.marker {
+.territory {
+  fill: var(--neutral);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
   cursor: pointer;
 }
 
-.marker circle.outer {
-  stroke: #101312;
-  stroke-width: 5;
+.territory:hover {
+  filter: brightness(1.08);
 }
 
-.marker circle.inner {
-  stroke: rgba(255, 255, 255, 0.68);
-  stroke-width: 2;
+.territory.selected {
+  stroke: #ffe276 !important;
+  stroke-width: 2.8;
 }
 
-.marker text {
-  fill: #111;
-  font-size: 15px;
-  font-weight: 800;
+.army-label {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke-width: 3.4px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.army-label.selected {
+  stroke-width: 5px;
+}
+
+.bonus-marker {
+  stroke: #fff500;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.bonus-marker-text {
+  fill: #f8f6df;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
 }
 
-.marker.p0 circle.inner { fill: var(--blue); }
-.marker.p1 circle.inner { fill: var(--red); }
-.marker.neutral circle.inner { fill: var(--neutral); }
-.marker.wasteland circle.inner { fill: #181818; }
-.marker.wasteland text { fill: #fff; }
-.marker.selected circle.outer { stroke: #fff; }
+.event-edge {
+  stroke: rgba(246, 222, 94, 0.86);
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
 
 .score-grid {
   display: grid;
