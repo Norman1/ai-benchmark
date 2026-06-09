@@ -129,7 +129,7 @@ async function runTournament() {
   try {
     const result = await fetchJson("/api/tournament", {
       method: "POST",
-      body: JSON.stringify({ seed: els.seed.value || "web", gamesPerPair: 2, timeLimitMs: configuredTimeLimit() })
+      body: JSON.stringify({ seed: els.seed.value || "web", gamesPerPair: 10, timeLimitMs: configuredTimeLimit() })
     });
     els.tournamentResults.innerHTML = `
       <table>

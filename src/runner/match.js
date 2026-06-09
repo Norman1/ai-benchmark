@@ -116,9 +116,9 @@ export async function runMatch(botManifests, options = {}) {
 
 export async function runTournament(options = {}) {
   const bots = await loadBotManifests(options.botsDir);
-  const ratings = Object.fromEntries(bots.map((bot) => [bot.id, { rating: 1500, games: 0, wins: 0, losses: 0, draws: 0 }]));
+  const ratings = Object.fromEntries(bots.map((bot) => [bot.id, { rating: 1000, games: 0, wins: 0, losses: 0, draws: 0 }]));
   const games = [];
-  const gamesPerPair = options.gamesPerPair ?? 2;
+  const gamesPerPair = options.gamesPerPair ?? 10;
   for (let i = 0; i < bots.length; i += 1) {
     for (let j = i + 1; j < bots.length; j += 1) {
       for (let gameIndex = 0; gameIndex < gamesPerPair; gameIndex += 1) {

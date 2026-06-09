@@ -34,13 +34,27 @@ test("explicit topology includes overseas route connections", () => {
   }
 });
 
-test("central america and west us bonus borders match the ladder map", () => {
+test("north america bonus membership stays stable", () => {
   const bonusById = new Map(MEDIUM_EARTH_MAP.bonuses.map((bonus) => [bonus.id, bonus]));
   assert.deepEqual(new Set(bonusById.get("central_america").territories), new Set(["t6", "t25", "t28", "t31"]));
+  assert.deepEqual(new Set(bonusById.get("canada").territories), new Set(["t58", "t61", "t67", "t100", "t107", "t153", "t154"]));
+  assert.deepEqual(
+    new Set(bonusById.get("west_us").territories),
+    new Set(["t16", "t108", "t117", "t124", "t131", "t143", "t152"])
+  );
+  assert.deepEqual(
+    new Set(bonusById.get("east_us").territories),
+    new Set(["t35", "t63", "t74", "t106", "t130", "t132", "t146"])
+  );
   assert.ok(!bonusById.get("west_us").territories.includes("t25"));
   assert.ok(!bonusById.get("west_us").territories.includes("t31"));
   assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t25").bonusId, "central_america");
   assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t31").bonusId, "central_america");
+  assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t100").bonusId, "canada");
+  assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t130").bonusId, "east_us");
+  assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t153").bonusId, "canada");
+  assert.equal(bonusById.get("west_us").territories.length, 7);
+  assert.equal(bonusById.get("east_us").territories.length, 7);
 });
 
 test("east africa 148 does not connect directly to middle east 53", () => {

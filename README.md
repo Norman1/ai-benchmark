@@ -14,7 +14,7 @@ Open `http://localhost:4173`.
 
 ```powershell
 npm run match -- --botA starter-greedy --botB starter-random --seed 42 --timeLimitMs 5000
-npm run tournament -- --gamesPerPair 4 --timeLimitMs 5000
+npm run tournament -- --gamesPerPair 10 --timeLimitMs 5000
 npm test
 ```
 

@@ -20,7 +20,7 @@ if (command === "bots") {
   console.log(JSON.stringify(result.summary, null, 2));
 } else if (command === "tournament") {
   const result = await runTournament({
-    gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 2),
+    gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 10),
     seed: options.seed ?? options._[1] ?? "cli-tournament",
     writeReplay: options.writeReplay === "true",
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
@@ -30,7 +30,7 @@ if (command === "bots") {
   console.log(`Usage:
   node src/cli.js bots
   node src/cli.js match --botA starter-random --botB starter-greedy --seed 42 --timeLimitMs 5000
-  node src/cli.js tournament --gamesPerPair 4 --timeLimitMs 5000
+  node src/cli.js tournament --gamesPerPair 10 --timeLimitMs 5000
 `);
 }
 
