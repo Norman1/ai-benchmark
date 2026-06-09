@@ -218,9 +218,12 @@ function planTurn(observation) {
     .filter(([, info]) => info.owner === state.enemyId)
     .map(([id]) => id);
   const enemyDistance = knownEnemyIds.length ? bfsTowardTargets(new Set(knownEnemyIds)) : new Map();
+  const myTotalArmies = mine.reduce((sum, territory) => sum + territory.armies, 0);
+  const knownEnemyArmies = knownEnemyIds.reduce((sum, id) => sum + believedArmies(id), 0);
   const huntMode = knownEnemyIds.length > 0
     && ((state.turn >= 10 && income >= enemyIncomeEst * 1.4)
-      || (state.turn >= 25 && enemyIncomeEst <= 9 && income >= 15));
+      || (state.turn >= 25 && enemyIncomeEst <= 9 && income >= 15)
+      || (state.turn >= 15 && myTotalArmies >= 2.5 * (knownEnemyArmies + enemyIncomeEst * 4)));
 
   const virtual = new Map(mine.map((territory) => [territory.id, territory.armies]));
   const reserve = new Map(mine.map((territory) => [territory.id, 1]));
@@ -256,13 +259,15 @@ function planTurn(observation) {
   }
   const myCompletedBonusTerritories = completedBonusTerritories(observation, mineSet);
 
-  // --- 1. Garrisons: 2 armies on bonus land near the enemy turn 2-army nibble
-  //     captures into failed attacks that bleed the attacker.
-  if (knownEnemyIds.length) {
+  // --- 1. Garrisons: 2 armies on the *border* of bonus land near the enemy
+  //     turn 2-army nibbles into failed attacks. Interior land cannot be hit
+  //     directly and stays at 1 so the armies keep working.
+  if (knownEnemyIds.length && !huntMode) {
     for (const territory of mine) {
       const distance = enemyDistance.get(territory.id) ?? Infinity;
       if (distance > 2) continue;
       if (!myCompletedBonusTerritories.has(territory.id)) continue;
+      if (!territory.neighbors.some((id) => !mineSet.has(id))) continue;
       reserve.set(territory.id, Math.max(reserve.get(territory.id) ?? 1, 2));
       if ((virtual.get(territory.id) ?? 0) < 2) deploy(territory.id, 2 - (virtual.get(territory.id) ?? 0));
     }
