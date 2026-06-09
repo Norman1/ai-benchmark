@@ -5,6 +5,7 @@ import { MEDIUM_EARTH_MAP } from "../engine/map.js";
 import { RULES } from "../engine/rules.js";
 import { normalizeSeed } from "../engine/random.js";
 import { BotProcess } from "./bot-process.js";
+import { prepareBotSandboxes } from "./bot-isolation.js";
 import { loadBotManifestById, loadBotManifests } from "./bots.js";
 import { expectedScore, updateElo } from "../rating/elo.js";
 
@@ -20,11 +21,17 @@ export async function runMatch(botManifests, options = {}) {
   const seed = normalizeSeed(options.seed ?? Date.now());
   const maxTurns = options.maxTurns ?? RULES.maxTurns;
   const draft = createDraft(seed, MEDIUM_EARTH_MAP);
-  const bots = botManifests.map((manifest) => new BotProcess(manifest, { timeLimitMs: options.timeLimitMs }));
+  const isolation = await prepareBotSandboxes(botManifests, { enabled: options.isolateBotSources !== false });
+  const activeManifests = isolation.manifests;
+  const bots = [];
   const pickOrders = [[], []];
   const failures = [];
 
   try {
+    for (const manifest of activeManifests) {
+      bots.push(new BotProcess(manifest, { timeLimitMs: options.timeLimitMs }));
+    }
+
     for (let playerId = 0; playerId < 2; playerId += 1) {
       const response = await safeRequest(bots[playerId], {
         type: "pick",
@@ -45,7 +52,7 @@ export async function runMatch(botManifests, options = {}) {
       seed,
       draft,
       pickOrders,
-      botNames: botManifests.map((bot) => bot.name)
+      botNames: activeManifests.map((bot) => bot.name)
     });
     game.replay.setup.submittedPicks = pickOrders;
 
@@ -100,7 +107,7 @@ export async function runMatch(botManifests, options = {}) {
     if (options.writeReplay !== false) {
       const replayDir = path.resolve(options.replayDir ?? "replays");
       await mkdir(replayDir, { recursive: true });
-      const fileName = `${Date.now()}-${botManifests[0].id}-vs-${botManifests[1].id}-seed-${summary.seed}.json`;
+      const fileName = `${Date.now()}-${activeManifests[0].id}-vs-${activeManifests[1].id}-seed-${summary.seed}.json`;
       const replayPath = path.join(replayDir, sanitizeFileName(fileName));
       await writeFile(replayPath, JSON.stringify(replay, null, 2), "utf8");
       summary.replayPath = replayPath;
@@ -109,6 +116,7 @@ export async function runMatch(botManifests, options = {}) {
     return { summary, replay };
   } finally {
     for (const bot of bots) bot.stop();
+    await isolation.cleanup();
   }
 }
 

@@ -22,6 +22,8 @@ npm test
 
 Read `BOT_API.md` before implementing a bot. It documents the stdin/stdout protocol, simultaneous pick submission, cycle allocation, normal-fog observations, legal orders, timing limits, and starter bot examples.
 
+For local source separation, each match runs every bot from its own random temporary copy of that bot's folder. This prevents ordinary sibling-folder reads between bots, but it is not a hardened sandbox for hostile code.
+
 ## Current Rules
 
 - 1v1 only

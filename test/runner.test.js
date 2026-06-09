@@ -101,6 +101,36 @@ rl.on("line", (line) => {
   }
 });
 
+test("runner launches bots from separate source copies", async () => {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "war-bots-"));
+  try {
+    const stealerDir = path.join(tempRoot, "stealer");
+    const victimDir = path.join(tempRoot, "victim");
+    await mkdir(stealerDir);
+    await mkdir(victimDir);
+    await writeFile(path.join(victimDir, "secret.txt"), "private bot notes\n", "utf8");
+    await writeFile(path.join(victimDir, "bot.js"), botScript({ reverseOnSiblingRead: false }), "utf8");
+    await writeFile(path.join(stealerDir, "bot.js"), botScript({ reverseOnSiblingRead: true }), "utf8");
+
+    const { replay } = await runMatch([
+      { id: "stealer", name: "Stealer", command: process.execPath, args: ["bot.js"], cwd: stealerDir },
+      { id: "victim", name: "Victim", command: process.execPath, args: ["bot.js"], cwd: victimDir }
+    ], {
+      seed: 321,
+      writeReplay: false,
+      maxTurns: 1,
+      timeLimitMs: 1000
+    });
+
+    assert.deepEqual(
+      replay.setup.submittedPicks[0],
+      replay.setup.availablePicks.slice(0, 6)
+    );
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("starter greedy prefers capturable territories in bonuses where it already has presence", async () => {
   const bot = starterGreedyBot();
 
@@ -300,4 +330,27 @@ function starterGreedyBot() {
 
 function deploymentsByTerritory(deployments) {
   return new Map(deployments.map((deployment) => [deployment.territoryId, deployment.armies]));
+}
+
+function botScript({ reverseOnSiblingRead }) {
+  return `
+const fs = require("node:fs");
+const path = require("node:path");
+const { createInterface } = require("node:readline");
+const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+function canReadSibling() {
+  return fs.existsSync(path.resolve(process.cwd(), "../victim/secret.txt"));
+}
+rl.on("line", (line) => {
+  const message = JSON.parse(line);
+  if (message.type === "pick") {
+    const available = message.availablePicks ?? [];
+    const shouldReverse = ${reverseOnSiblingRead ? "canReadSibling()" : "false"};
+    const picks = (shouldReverse ? available.slice().reverse() : available).slice(0, 6);
+    process.stdout.write(JSON.stringify({ picks }) + "\\n");
+  } else if (message.type === "turn") {
+    process.stdout.write(JSON.stringify({ orders: { deployments: [], orders: [] } }) + "\\n");
+  }
+});
+`;
 }

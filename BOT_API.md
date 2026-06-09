@@ -2,7 +2,7 @@
 
 Bots are black-box processes. The engine launches each bot from its own `bot.json` manifest and sends one JSON object per line on stdin. The bot must write exactly one JSON reply per request on stdout. Use stderr for logs.
 
-Each bot should live in its own folder. During benchmark evaluation, only that bot folder and its runnable dependencies should be mounted or copied into the benchmark, so competing agents do not see each other's source.
+Each bot should live in its own folder. For each match, the runner copies every bot into its own random temporary working directory and launches the process from that copy, so ordinary relative-path inspection cannot see the opponent's source folder. This is practical source separation for a local/private benchmark, not a hardened OS security sandbox against malicious code.
 
 ## Manifest
 

@@ -28,12 +28,15 @@ function normalizeManifest(manifest, botDir) {
   if (!manifest.id || !manifest.command) {
     throw new Error(`Invalid bot manifest in ${botDir}: id and command are required.`);
   }
+  const workingDirectory = String(manifest.workingDirectory ?? ".");
   return {
     id: String(manifest.id),
     name: String(manifest.name ?? manifest.id),
     command: String(manifest.command),
     args: Array.isArray(manifest.args) ? manifest.args.map(String) : [],
-    cwd: path.resolve(botDir, manifest.workingDirectory ?? "."),
+    sourceDir: path.resolve(botDir),
+    workingDirectory,
+    cwd: path.resolve(botDir, workingDirectory),
     description: String(manifest.description ?? "")
   };
 }
