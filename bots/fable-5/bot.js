@@ -1,0 +1,637 @@
+// Fable 5 — Warzone-style 1v1 bot.
+// v6: every army has a job. Garrisons blunt nibble attacks, holes in my
+// bonuses get retaken immediately, income deploys at the front, walls only
+// where they can actually hold, and stacks never freeze into dead capital.
+import readline from "node:readline";
+
+const VERSION = "v6";
+
+const state = {
+  playerId: null,
+  enemyId: null,
+  turn: 0,
+  map: null,
+  distribution: new Set(),
+  wastelands: new Set(),
+  intel: new Map() // id -> { owner, armies, turn }
+};
+
+const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
+rl.on("line", (line) => {
+  let message;
+  try {
+    message = JSON.parse(line);
+  } catch {
+    return;
+  }
+  try {
+    if (message.type === "pick") {
+      reply({ picks: handlePick(message) });
+    } else if (message.type === "turn") {
+      reply({ orders: handleTurn(message) });
+    }
+  } catch (error) {
+    process.stderr.write(`fable-5 ${VERSION} error: ${error.stack}\n`);
+    if (message.type === "pick") reply({ picks: message.availablePicks?.slice(0, message.requiredPicks ?? 6) ?? [] });
+    else if (message.type === "turn") reply({ orders: { deployments: [], orders: [] } });
+  }
+});
+
+function reply(payload) {
+  process.stdout.write(`${JSON.stringify(payload)}\n`);
+}
+
+// ---------------------------------------------------------------------------
+// Combat math (0% luck, straight round, 60% offense / 70% defense)
+
+function straightRound(value) {
+  return Math.floor(value + 0.5);
+}
+
+function attackersNeeded(defenders) {
+  const d = Math.max(0, Math.floor(defenders));
+  if (d <= 0) return 1;
+  const toKillAll = Math.ceil((d - 0.5) / 0.6);
+  const toSurvive = straightRound(d * 0.7) + 1;
+  return Math.max(toKillAll, toSurvive);
+}
+
+function defendersNeeded(attackers) {
+  const a = Math.max(0, Math.floor(attackers));
+  return straightRound(a * 0.6) + 1;
+}
+
+// ---------------------------------------------------------------------------
+// Map + intel
+
+function buildMap(mapData) {
+  const byId = new Map();
+  const adjacency = new Map();
+  for (const territory of mapData.territories) {
+    byId.set(territory.id, territory);
+    adjacency.set(territory.id, territory.neighbors ?? []);
+  }
+  const bonuses = (mapData.bonuses ?? []).filter((bonus) => (bonus.value ?? 0) > 0);
+  state.map = {
+    byId,
+    adjacency,
+    bonuses,
+    bonusById: new Map(bonuses.map((bonus) => [bonus.id, bonus])),
+    territoryIds: mapData.territories.map((territory) => territory.id)
+  };
+}
+
+function initIntel() {
+  for (const id of state.map.territoryIds) {
+    let armies = 2;
+    if (state.wastelands.has(id)) armies = 10;
+    else if (state.distribution.has(id)) armies = 4;
+    state.intel.set(id, { owner: null, armies, turn: 0 });
+  }
+}
+
+function updateIntel(observation) {
+  for (const territory of observation.territories) {
+    if (territory.visible) {
+      state.intel.set(territory.id, { owner: territory.owner, armies: territory.armies, turn: observation.turn });
+    } else {
+      const known = state.intel.get(territory.id);
+      if (known && known.owner === state.playerId) {
+        state.intel.set(territory.id, { owner: state.enemyId, armies: null, turn: observation.turn });
+      }
+    }
+  }
+}
+
+function believedArmies(id) {
+  const known = state.intel.get(id);
+  if (!known || known.armies === null) {
+    if (state.wastelands.has(id)) return 10;
+    if (state.distribution.has(id)) return 4;
+    return 2;
+  }
+  return known.armies;
+}
+
+function believedOwner(id) {
+  return state.intel.get(id)?.owner ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Picking
+
+function handlePick(message) {
+  state.playerId = message.playerId;
+  state.enemyId = 1 - message.playerId;
+  buildMap(message.map);
+  state.distribution = new Set(message.distribution);
+  state.wastelands = new Set(message.wastelands);
+  initIntel();
+
+  const scored = message.availablePicks.map((id) => ({ id, score: scorePick(id) }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, message.requiredPicks ?? 6).map((pick) => pick.id);
+}
+
+function scorePick(id) {
+  const territory = state.map.byId.get(id);
+  const bonus = state.map.bonusById.get(territory.bonusId);
+  if (!bonus) return -100;
+
+  const cost = bonusCompletionCost(bonus, new Set([id]));
+  const exposure = bonusExternalNeighbors(bonus).length;
+  const hasWasteland = bonus.territories.some((tid) => state.wastelands.has(tid));
+
+  const neighborScores = [];
+  for (const other of state.map.bonuses) {
+    if (other.id === bonus.id) continue;
+    if (!bonusesTouch(bonus, other)) continue;
+    const otherCost = bonusCompletionCost(other, new Set());
+    neighborScores.push((other.value * 10) / (otherCost + 4));
+  }
+  neighborScores.sort((a, b) => b - a);
+  const nearby = (neighborScores[0] ?? 0) + (neighborScores[1] ?? 0) * 0.5;
+
+  return (bonus.value * 16) / (cost + 4)
+    + bonus.value * 0.8
+    + nearby * 2.2
+    - exposure * 0.4
+    - (hasWasteland ? 5 : 0);
+}
+
+function bonusCompletionCost(bonus, ownedSet) {
+  let cost = 0;
+  for (const tid of bonus.territories) {
+    if (ownedSet.has(tid)) continue;
+    cost += attackersNeeded(believedArmies(tid));
+  }
+  return cost;
+}
+
+function bonusExternalNeighbors(bonus) {
+  const inside = new Set(bonus.territories);
+  const outside = new Set();
+  for (const tid of bonus.territories) {
+    for (const neighbor of state.map.adjacency.get(tid) ?? []) {
+      if (!inside.has(neighbor)) outside.add(neighbor);
+    }
+  }
+  return [...outside];
+}
+
+function bonusesTouch(a, b) {
+  const inB = new Set(b.territories);
+  for (const tid of a.territories) {
+    for (const neighbor of state.map.adjacency.get(tid) ?? []) {
+      if (inB.has(neighbor)) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Turn planning
+
+function handleTurn(message) {
+  const observation = message.observation;
+  state.playerId = observation.playerId;
+  state.enemyId = 1 - observation.playerId;
+  state.turn = observation.turn;
+  if (!state.map) {
+    buildMap({ territories: observation.territories, bonuses: observation.map?.bonuses ?? [] });
+    initIntel();
+  }
+  updateIntel(observation);
+  return planTurn(observation);
+}
+
+function planTurn(observation) {
+  const obsById = new Map(observation.territories.map((territory) => [territory.id, territory]));
+  const mine = observation.territories.filter((territory) => territory.mine);
+  const mineSet = new Set(mine.map((territory) => territory.id));
+  if (!mine.length) return { deployments: [], orders: [] };
+
+  const income = Math.max(0, Math.floor(observation.income?.total ?? 0));
+  const enemyIncomeEst = estimateEnemyIncome();
+  const incomeLead = income - enemyIncomeEst;
+  const knownEnemyIds = [...state.intel.entries()]
+    .filter(([, info]) => info.owner === state.enemyId)
+    .map(([id]) => id);
+  const enemyDistance = knownEnemyIds.length ? bfsTowardTargets(new Set(knownEnemyIds)) : new Map();
+  const huntMode = knownEnemyIds.length > 0
+    && state.turn >= 10
+    && income >= enemyIncomeEst * 1.4;
+
+  const virtual = new Map(mine.map((territory) => [territory.id, territory.armies]));
+  const reserve = new Map(mine.map((territory) => [territory.id, 1]));
+  const deployments = new Map();
+  let budget = income;
+
+  const deploy = (id, amount) => {
+    const spend = Math.min(amount, budget);
+    if (spend <= 0) return 0;
+    budget -= spend;
+    deployments.set(id, (deployments.get(id) ?? 0) + spend);
+    virtual.set(id, (virtual.get(id) ?? 0) + spend);
+    return spend;
+  };
+  const spare = (id) => Math.max(0, (virtual.get(id) ?? 0) - (reserve.get(id) ?? 1));
+  const commit = (id, amount) => {
+    virtual.set(id, (virtual.get(id) ?? 0) - amount);
+  };
+
+  const enemyAttackOrders = [];
+  const neutralAttackOrders = [];
+  const transferOrders = [];
+
+  // --- Contact analysis.
+  const enemyAdjacent = new Map();
+  for (const territory of mine) {
+    let power = 0;
+    for (const neighborId of territory.neighbors) {
+      const neighbor = obsById.get(neighborId);
+      if (neighbor?.visible && neighbor.owner === state.enemyId) power += Math.max(0, neighbor.armies - 1);
+    }
+    if (power > 0) enemyAdjacent.set(territory.id, power);
+  }
+  const myCompletedBonusTerritories = completedBonusTerritories(observation, mineSet);
+
+  // --- 1. Garrisons: 2 armies on bonus land near the enemy turn 2-army nibble
+  //     captures into failed attacks that bleed the attacker.
+  if (knownEnemyIds.length) {
+    for (const territory of mine) {
+      const distance = enemyDistance.get(territory.id) ?? Infinity;
+      if (distance > 2) continue;
+      if (!myCompletedBonusTerritories.has(territory.id)) continue;
+      reserve.set(territory.id, Math.max(reserve.get(territory.id) ?? 1, 2));
+      if ((virtual.get(territory.id) ?? 0) < 2) deploy(territory.id, 2 - (virtual.get(territory.id) ?? 0));
+    }
+  }
+
+  // --- 2. Expansion: complete the most efficient bonuses first.
+  const plans = scoreExpansionBonuses(observation, mineSet, obsById);
+  const claimed = new Set();
+  const unfunded = [];
+  for (const plan of plans) {
+    if (huntMode && plan.score < 6) break;
+    for (const target of plan.targets) {
+      if (claimed.has(target.id)) continue;
+      const sources = target.adjacentMine
+        .map((id) => ({ id, spare: spare(id) }))
+        .filter((source) => source.spare > 0)
+        .sort((a, b) => b.spare - a.spare);
+      const split = planCapture(target.armies, sources, budget);
+      if (!split) {
+        unfunded.push({ target, plan });
+        continue;
+      }
+      for (const part of split.parts) {
+        if (part.deploy > 0) deploy(part.id, part.deploy);
+        neutralAttackOrders.push({ from: part.id, to: target.id, armies: part.armies, mode: "attackTransfer", key: plan.score });
+        commit(part.id, part.armies);
+      }
+      claimed.add(target.id);
+    }
+  }
+
+  // --- 3. Enemy jobs: retake holes, break bonuses, raid, delete sieges.
+  if (knownEnemyIds.length) {
+    const enemyTargets = [];
+    for (const territory of observation.territories) {
+      if (!territory.visible || territory.owner !== state.enemyId) continue;
+      const adjacentMine = territory.neighbors.filter((id) => mineSet.has(id));
+      if (!adjacentMine.length) continue;
+      enemyTargets.push({
+        territory,
+        adjacentMine,
+        value: enemyTargetValue(territory, mineSet, myCompletedBonusTerritories, incomeLead)
+      });
+    }
+    enemyTargets.sort((a, b) => b.value - a.value);
+    for (const { territory, adjacentMine, value } of enemyTargets) {
+      if (claimed.has(territory.id)) continue;
+      if (value < 5 && !huntMode) continue;
+      const deployGuess = territory.armies <= 2 ? 0.12 : (territory.armies <= 4 ? 0.25 : (huntMode ? 0.2 : 0.35));
+      const assumedDefense = territory.armies + Math.round(enemyIncomeEst * deployGuess);
+      const need = attackersNeeded(assumedDefense);
+      const sources = adjacentMine.map((id) => ({ id, spare: spare(id) })).sort((a, b) => b.spare - a.spare);
+      const source = sources[0];
+      if (!source) continue;
+      let force = source.spare;
+      if (force < need && budget > 0 && value >= 8) {
+        const extra = Math.min(need - force, budget);
+        if (force + extra >= need) {
+          deploy(source.id, extra);
+          force += extra;
+        }
+      }
+      if (force >= need) {
+        const isSiege = territory.armies >= 8;
+        const send = huntMode || isSiege ? force : Math.min(force, need + 2);
+        enemyAttackOrders.push({ from: source.id, to: territory.id, armies: send, mode: "attackTransfer" });
+        commit(source.id, send);
+        claimed.add(territory.id);
+      }
+    }
+  }
+
+  // --- 4. Walls: only completed-bonus borders, and only if they can hold.
+  if (enemyAdjacent.size > 0 && !huntMode) {
+    const walls = [...enemyAdjacent.entries()]
+      .map(([id, power]) => {
+        const territory = obsById.get(id);
+        const bonus = state.map.bonusById.get(territory?.bonusId);
+        const protectedValue = myCompletedBonusTerritories.has(id) ? (bonus?.value ?? 0) : 0;
+        return { id, power, protectedValue };
+      })
+      .filter((wall) => wall.protectedValue > 0)
+      .sort((a, b) => b.protectedValue - a.protectedValue);
+    for (const wall of walls) {
+      const calibrated = attackersNeeded(obsById.get(wall.id)?.armies ?? 0) + Math.round(enemyIncomeEst * 0.3);
+      const worstCase = wall.power + Math.round(enemyIncomeEst * 0.6);
+      const predicted = Math.min(calibrated, worstCase);
+      const needHold = defendersNeeded(predicted);
+      const current = virtual.get(wall.id) ?? 0;
+      const deficit = needHold - current;
+      if (deficit > Math.floor(budget * 0.6)) continue; // cannot realistically hold: stay mobile
+      if (deficit > 0) deploy(wall.id, deficit);
+      reserve.set(wall.id, Math.max(reserve.get(wall.id) ?? 1, Math.min(virtual.get(wall.id) ?? 1, needHold)));
+    }
+  }
+
+  // --- 5. Remaining budget: save up for expansion, then reinforce the front line.
+  if (budget > 0 && unfunded.length) {
+    const best = unfunded[0];
+    const sourceId = best.target.adjacentMine
+      .map((id) => ({ id, spare: spare(id) }))
+      .sort((a, b) => b.spare - a.spare)[0]?.id;
+    if (sourceId && best.plan.score >= 4) deploy(sourceId, Math.min(budget, Math.ceil(budget * 0.7)));
+  }
+  if (budget > 0) {
+    const frontline = [...mine].sort((a, b) => {
+      const contactA = enemyAdjacent.has(a.id) ? 0 : 1;
+      const contactB = enemyAdjacent.has(b.id) ? 0 : 1;
+      if (contactA !== contactB) return contactA - contactB;
+      const distA = enemyDistance.get(a.id) ?? Infinity;
+      const distB = enemyDistance.get(b.id) ?? Infinity;
+      if (distA !== distB) return distA - distB;
+      return (virtual.get(b.id) ?? 0) - (virtual.get(a.id) ?? 0);
+    })[0];
+    deploy((frontline ?? mine[0]).id, budget);
+  }
+
+  // --- 6. Transfers: armies flow toward expansion, then toward the enemy.
+  const objectives = new Set();
+  if (!huntMode) {
+    for (const { target } of unfunded) {
+      for (const id of target.adjacentMine) objectives.add(id);
+    }
+    for (const plan of plans) {
+      for (const target of plan.targets) {
+        if (!claimed.has(target.id)) {
+          for (const id of target.adjacentMine) objectives.add(id);
+        }
+      }
+    }
+  }
+  for (const id of enemyAdjacent.keys()) objectives.add(id);
+  if (!objectives.size) {
+    if (knownEnemyIds.length) {
+      let bestDistance = Infinity;
+      for (const territory of mine) {
+        const distance = enemyDistance.get(territory.id);
+        if (distance !== undefined && distance < bestDistance) bestDistance = distance;
+      }
+      for (const territory of mine) {
+        if ((enemyDistance.get(territory.id) ?? Infinity) === bestDistance) objectives.add(territory.id);
+      }
+    } else {
+      for (const territory of mine) {
+        if (territory.neighbors.some((nid) => !mineSet.has(nid))) objectives.add(territory.id);
+      }
+    }
+  }
+  const distances = bfsDistances(objectives, mineSet);
+  for (const territory of mine) {
+    const distance = distances.get(territory.id);
+    if (distance === undefined || distance <= 0) continue;
+    const movable = spare(territory.id);
+    if (movable <= 0) continue;
+    const next = territory.neighbors
+      .filter((id) => mineSet.has(id) && (distances.get(id) ?? Infinity) < distance)
+      .sort((a, b) => (distances.get(a) ?? Infinity) - (distances.get(b) ?? Infinity))[0];
+    if (!next) continue;
+    transferOrders.push({ from: territory.id, to: next, armies: movable, mode: "transferOnly" });
+    commit(territory.id, movable);
+  }
+
+  // --- 7. March: if totally idle, open a path toward the enemy.
+  if (!neutralAttackOrders.length && !enemyAttackOrders.length && !enemyAdjacent.size && knownEnemyIds.length) {
+    const step = nextStepTowardEnemy(mineSet, knownEnemyIds);
+    if (step) {
+      const sources = (state.map.adjacency.get(step) ?? [])
+        .filter((id) => mineSet.has(id))
+        .map((id) => ({ id, spare: spare(id) }))
+        .sort((a, b) => b.spare - a.spare);
+      const split = planCapture(believedArmies(step), sources, budget);
+      if (split) {
+        for (const part of split.parts) {
+          if (part.deploy > 0) deploy(part.id, part.deploy);
+          neutralAttackOrders.push({ from: part.id, to: step, armies: part.armies, mode: "attackTransfer", key: 0 });
+          commit(part.id, part.armies);
+        }
+      }
+    }
+  }
+
+  neutralAttackOrders.sort((a, b) => b.key - a.key);
+  const orders = [
+    ...enemyAttackOrders,
+    ...neutralAttackOrders.map(({ key, ...order }) => order),
+    ...transferOrders
+  ];
+  return {
+    deployments: [...deployments.entries()].map(([territoryId, armies]) => ({ territoryId, armies })),
+    orders
+  };
+}
+
+function planCapture(defenders, sources, budget) {
+  if (!sources.length) return null;
+  const single = sources[0];
+  const need = attackersNeeded(defenders);
+  if (single.spare >= need) {
+    return { parts: [{ id: single.id, armies: need, deploy: 0 }] };
+  }
+  if (single.spare + budget >= need) {
+    return { parts: [{ id: single.id, armies: need, deploy: need - single.spare }] };
+  }
+  let remaining = defenders;
+  const parts = [];
+  for (const source of sources.slice(0, 3)) {
+    if (remaining <= 0) break;
+    const finishNeed = attackersNeeded(remaining);
+    if (source.spare >= finishNeed) {
+      parts.push({ id: source.id, armies: finishNeed, deploy: 0 });
+      remaining = 0;
+      break;
+    }
+    if (source.spare < 2) continue;
+    const kills = straightRound(source.spare * 0.6);
+    if (kills <= 0) continue;
+    parts.push({ id: source.id, armies: source.spare, deploy: 0 });
+    remaining -= kills;
+  }
+  if (remaining > 0) return null;
+  return { parts };
+}
+
+function completedBonusTerritories(observation, mineSet) {
+  const result = new Set();
+  for (const bonusId of observation.income?.completedBonuses ?? []) {
+    const bonus = state.map.bonusById.get(bonusId);
+    if (!bonus) continue;
+    for (const tid of bonus.territories) {
+      if (mineSet.has(tid)) result.add(tid);
+    }
+  }
+  return result;
+}
+
+// Evidence-based: credit bonuses by the fraction we know the enemy holds,
+// plus an early ramp. Never mirror our own income.
+function estimateEnemyIncome() {
+  let estimate = 5;
+  for (const bonus of state.map.bonuses) {
+    let enemyKnown = 0;
+    let mineOrNeutralKnown = 0;
+    for (const tid of bonus.territories) {
+      const info = state.intel.get(tid);
+      if (info?.owner === state.enemyId) enemyKnown += 1;
+      else if (info?.owner === state.playerId || (info?.owner === null && info.turn > 0)) mineOrNeutralKnown += 1;
+    }
+    if (enemyKnown === 0) continue;
+    if (mineOrNeutralKnown > 0 && enemyKnown < bonus.territories.length) {
+      estimate += (bonus.value * enemyKnown) / bonus.territories.length / 2;
+      continue;
+    }
+    estimate += (bonus.value * enemyKnown) / bonus.territories.length;
+  }
+  const ramp = Math.min(5 + state.turn * 1.4, 28);
+  return Math.max(estimate, Math.min(ramp, estimate + 12));
+}
+
+function scoreExpansionBonuses(observation, mineSet, obsById) {
+  const plans = [];
+  for (const bonus of state.map.bonuses) {
+    const missing = bonus.territories.filter((tid) => !mineSet.has(tid));
+    if (!missing.length) continue;
+    let cost = 0;
+    let enemyInside = false;
+    let enemyTouches = false;
+    const targets = [];
+    for (const tid of missing) {
+      const owner = believedOwner(tid);
+      if (owner === state.enemyId) {
+        enemyInside = true;
+        cost += attackersNeeded(believedArmies(tid) + 3);
+        continue;
+      }
+      const armies = believedArmies(tid);
+      cost += attackersNeeded(armies);
+      const adjacentMine = (state.map.adjacency.get(tid) ?? []).filter((id) => mineSet.has(id));
+      const observed = obsById.get(tid);
+      if (adjacentMine.length && observed?.visible && observed.owner === null) {
+        targets.push({ id: tid, armies: observed.armies, adjacentMine });
+      }
+      for (const nid of state.map.adjacency.get(tid) ?? []) {
+        if (believedOwner(nid) === state.enemyId) enemyTouches = true;
+      }
+    }
+    if (!targets.length) continue;
+    let score = (bonus.value * 12) / (cost + 3);
+    if (enemyInside) score *= 0.5;
+    else if (enemyTouches) score *= 0.75;
+    targets.sort((a, b) => attackersNeeded(a.armies) - attackersNeeded(b.armies));
+    plans.push({ bonus, score, targets });
+  }
+  plans.sort((a, b) => b.score - a.score);
+  return plans;
+}
+
+function enemyTargetValue(territory, mineSet, myCompletedBonusTerritories, incomeLead) {
+  let value = 2;
+  const bonus = state.map.bonusById.get(territory.bonusId);
+  if (bonus) {
+    if (bonus.territories.every((tid) => tid === territory.id || believedOwner(tid) === state.enemyId)) {
+      value += bonus.value * 3; // breaks a completed enemy bonus
+    }
+    const mineInBonus = bonus.territories.filter((tid) => mineSet.has(tid)).length;
+    if (mineInBonus > 0) value += 3 + mineInBonus;
+    const otherwiseMine = bonus.territories.every((tid) => tid === territory.id || mineSet.has(tid));
+    if (otherwiseMine) value += 6 + bonus.value * 4; // retake a hole in my bonus
+  }
+  if (territory.armies >= 8 && incomeLead >= 4) {
+    const threatensBonus = territory.neighbors?.some((tid) => myCompletedBonusTerritories.has(tid));
+    if (threatensBonus) value += territory.armies * 0.8;
+    else value += territory.armies * 0.3;
+  }
+  value -= territory.armies * 0.4;
+  return value;
+}
+
+function bfsTowardTargets(targetSet) {
+  const distances = new Map();
+  const queue = [];
+  for (const id of targetSet) {
+    distances.set(id, 0);
+    queue.push(id);
+  }
+  for (let index = 0; index < queue.length; index += 1) {
+    const id = queue[index];
+    const next = (distances.get(id) ?? 0) + 1;
+    for (const neighborId of state.map.adjacency.get(id) ?? []) {
+      if (distances.has(neighborId)) continue;
+      distances.set(neighborId, next);
+      queue.push(neighborId);
+    }
+  }
+  return distances;
+}
+
+function nextStepTowardEnemy(mineSet, knownEnemyIds) {
+  const enemyDistances = bfsTowardTargets(new Set(knownEnemyIds));
+  let best = null;
+  for (const id of mineSet) {
+    for (const neighborId of state.map.adjacency.get(id) ?? []) {
+      if (mineSet.has(neighborId)) continue;
+      if (believedOwner(neighborId) === state.enemyId) continue;
+      const distance = enemyDistances.get(neighborId);
+      if (distance === undefined) continue;
+      const cost = attackersNeeded(believedArmies(neighborId));
+      const score = distance * 10 + cost;
+      if (!best || score < best.score) best = { id: neighborId, score };
+    }
+  }
+  return best?.id ?? null;
+}
+
+function bfsDistances(objectiveSet, mineSet) {
+  const distances = new Map();
+  const queue = [];
+  for (const id of objectiveSet) {
+    if (!mineSet.has(id)) continue;
+    distances.set(id, 0);
+    queue.push(id);
+  }
+  for (let index = 0; index < queue.length; index += 1) {
+    const id = queue[index];
+    const next = (distances.get(id) ?? 0) + 1;
+    for (const neighborId of state.map.adjacency.get(id) ?? []) {
+      if (!mineSet.has(neighborId) || distances.has(neighborId)) continue;
+      distances.set(neighborId, next);
+      queue.push(neighborId);
+    }
+  }
+  return distances;
+}

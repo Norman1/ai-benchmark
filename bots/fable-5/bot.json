@@ -1,0 +1,7 @@
+{
+  "id": "fable-5",
+  "name": "Fable 5",
+  "description": "Claude Fable 5's evolving 1v1 bot: exact combat math, fog intel, bonus-efficiency picks, threat-aware defense.",
+  "command": "node",
+  "args": ["bot.js"]
+}
