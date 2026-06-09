@@ -57,11 +57,11 @@ function pickScore(id, model, message) {
     .reduce((total, bonusId) => total + Math.max(0, model.bonuses.get(bonusId)?.value ?? 0), 0);
 
   return (
-    bonus.value * 31
-    + (bonus.value / Math.max(1, bonus.territories.length)) * 130
-    - bonus.territories.length * 7
-    - bonusShape.borderTerritories * 4.5
-    - bonusShape.externalEdges * 0.9
+    bonus.value * 24
+    + (bonus.value / Math.max(1, bonus.territories.length)) * 185
+    - bonus.territories.length * 10
+    - bonusShape.borderTerritories * 5.5
+    - bonusShape.externalEdges * 1.1
     - wastedInBonus * 22
     - wastedNeighbors * 5
     + sameBonusNeighbors * 5
