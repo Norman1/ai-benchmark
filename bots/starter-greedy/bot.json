@@ -1,7 +1,7 @@
 {
   "id": "starter-greedy",
   "name": "Starter Greedy",
-  "description": "Prioritizes efficient bonuses, expands from every viable border, and routes spare armies toward the front.",
+  "description": "Expands inside owned bonuses, balances surplus deployments across fronts, and spends spare border armies.",
   "command": "node",
   "args": ["bot.js"]
 }

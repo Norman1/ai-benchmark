@@ -38,6 +38,7 @@ function chooseTurn(observation) {
   const owned = new Set(mine.map((territory) => territory.id));
   if (!mine.length) return { deployments: [], orders: [] };
 
+  const bonusPresence = countBonusPresence(mine);
   const virtualArmies = new Map(mine.map((territory) => [territory.id, positiveInt(territory.armies)]));
   const income = positiveInt(observation.income?.total);
   const deployments = planDeployments({
@@ -46,13 +47,17 @@ function chooseTurn(observation) {
     byId,
     owned,
     bonusById,
+    bonusPresence,
     playerId,
     virtualArmies
   });
 
   const orders = [];
   const plannedTargets = new Set();
-  const attackSources = [...mine].sort((a, b) => sourcePriority(b, byId, owned, bonusById, playerId) - sourcePriority(a, byId, owned, bonusById, playerId));
+  const attackSources = [...mine].sort((a, b) => (
+    sourcePriority(b, byId, owned, bonusById, bonusPresence, playerId)
+    - sourcePriority(a, byId, owned, bonusById, bonusPresence, playerId)
+  ));
 
   for (const source of attackSources) {
     let movable = Math.max(0, (virtualArmies.get(source.id) ?? source.armies) - 1);
@@ -60,7 +65,7 @@ function chooseTurn(observation) {
 
     const targets = visibleTargets(source, byId, owned)
       .filter((target) => !plannedTargets.has(target.id))
-      .sort((a, b) => compareTargets(a, b, bonusById, playerId));
+      .sort((a, b) => compareTargets(a, b, bonusById, bonusPresence, playerId));
 
     for (const target of targets) {
       if (movable <= 0) break;
@@ -71,6 +76,16 @@ function chooseTurn(observation) {
       plannedTargets.add(target.id);
     }
 
+    if (movable > 0) {
+      const fallbackTargets = visibleTargets(source, byId, owned)
+        .sort((a, b) => compareTargets(a, b, bonusById, bonusPresence, playerId));
+      const fallbackTarget = fallbackTargets.find((target) => !plannedTargets.has(target.id)) ?? fallbackTargets[0];
+      if (fallbackTarget) {
+        orders.push({ from: source.id, to: fallbackTarget.id, armies: movable, mode: "attackTransfer" });
+        movable = 0;
+      }
+    }
+
     virtualArmies.set(source.id, movable + 1);
   }
 
@@ -78,10 +93,18 @@ function chooseTurn(observation) {
   return { deployments, orders };
 }
 
-function planDeployments({ income, mine, byId, owned, bonusById, playerId, virtualArmies }) {
+function planDeployments({ income, mine, byId, owned, bonusById, bonusPresence, playerId, virtualArmies }) {
   const deploymentById = new Map();
   for (let army = 0; army < income; army += 1) {
-    const target = chooseDeploymentTarget(mine, byId, owned, bonusById, playerId, virtualArmies);
+    const target = chooseDeploymentTarget({
+      mine,
+      byId,
+      owned,
+      bonusById,
+      bonusPresence,
+      playerId,
+      virtualArmies
+    });
     if (!target) break;
     virtualArmies.set(target.id, (virtualArmies.get(target.id) ?? target.armies) + 1);
     deploymentById.set(target.id, (deploymentById.get(target.id) ?? 0) + 1);
@@ -89,51 +112,59 @@ function planDeployments({ income, mine, byId, owned, bonusById, playerId, virtu
   return [...deploymentById.entries()].map(([territoryId, armies]) => ({ territoryId, armies }));
 }
 
-function chooseDeploymentTarget(mine, byId, owned, bonusById, playerId, virtualArmies) {
-  let best = null;
-  for (const territory of mine) {
+function chooseDeploymentTarget({ mine, byId, owned, bonusById, bonusPresence, playerId, virtualArmies }) {
+  const candidates = mine.map((territory) => {
     const targets = visibleTargets(territory, byId, owned);
-    if (!targets.length) {
-      const fallbackScore = -10000 + territory.armies * 0.01;
-      if (!best || fallbackScore > best.score) best = { territory, score: fallbackScore };
+    return {
+      territory,
+      targets,
+      armies: virtualArmies.get(territory.id) ?? territory.armies,
+      need: neededExpansionArmies(territory, byId, owned, bonusById, bonusPresence, playerId, virtualArmies),
+      pressure: sourcePriority(territory, byId, owned, bonusById, bonusPresence, playerId)
+    };
+  });
+
+  const needingExpansion = candidates
+    .filter((candidate) => candidate.targets.length && candidate.need.armies > 0)
+    .sort((a, b) => {
+      if (a.need.armies !== b.need.armies) return a.need.armies - b.need.armies;
+      if (a.need.value !== b.need.value) return b.need.value - a.need.value;
+      return b.pressure - a.pressure;
+    });
+  if (needingExpansion.length) return needingExpansion[0].territory;
+
+  const activeFronts = candidates.filter((candidate) => candidate.targets.length);
+  const balancePool = activeFronts.length ? activeFronts : candidates;
+  balancePool.sort((a, b) => {
+    if (a.armies !== b.armies) return a.armies - b.armies;
+    return b.pressure - a.pressure;
+  });
+  return balancePool[0]?.territory ?? mine[0];
+}
+
+function neededExpansionArmies(source, byId, owned, bonusById, bonusPresence, playerId, virtualArmies) {
+  let movable = Math.max(0, (virtualArmies.get(source.id) ?? source.armies) - 1);
+  let armies = 0;
+  let value = 0;
+  const targets = valuableTargets(source, byId, owned, bonusById, bonusPresence, playerId);
+  for (const target of targets) {
+    const needed = requiredAttackers(target.armies);
+    if (movable >= needed) {
+      movable -= needed;
       continue;
     }
 
-    const movable = Math.max(0, (virtualArmies.get(territory.id) ?? territory.armies) - 1);
-    const before = simulateCaptures(territory, movable, byId, owned, bonusById, playerId);
-    const after = simulateCaptures(territory, movable + 1, byId, owned, bonusById, playerId);
-    const deficit = nextCaptureDeficit(territory, movable, byId, owned);
-    const pressure = sourcePriority(territory, byId, owned, bonusById, playerId);
-    const score = (after.count - before.count) * 1000
-      + (after.value - before.value) * 10
-      - Math.max(0, deficit) * 18
-      + pressure * 0.08;
-
-    if (!best || score > best.score) best = { territory, score };
+    armies += needed - movable;
+    value += targetValue(target, bonusById, bonusPresence, playerId);
+    movable = 0;
   }
-  return best?.territory ?? mine[0];
+  return { armies, value };
 }
 
-function simulateCaptures(source, movableArmies, byId, owned, bonusById, playerId) {
-  let remaining = movableArmies;
-  let count = 0;
-  let value = 0;
-  const targets = visibleTargets(source, byId, owned).sort((a, b) => compareTargets(a, b, bonusById, playerId));
-  for (const target of targets) {
-    const needed = requiredAttackers(target.armies);
-    if (remaining < needed) continue;
-    remaining -= needed;
-    count += 1;
-    value += targetValue(target, bonusById, playerId);
-  }
-  return { count, value, remaining };
-}
-
-function nextCaptureDeficit(source, movableArmies, byId, owned) {
-  const deficits = visibleTargets(source, byId, owned)
-    .map((target) => requiredAttackers(target.armies) - movableArmies)
-    .filter((deficit) => deficit > 0);
-  return deficits.length ? Math.min(...deficits) : 0;
+function valuableTargets(source, byId, owned, bonusById, bonusPresence, playerId) {
+  return visibleTargets(source, byId, owned)
+    .filter((target) => targetValue(target, bonusById, bonusPresence, playerId) > 0)
+    .sort((a, b) => compareTargets(a, b, bonusById, bonusPresence, playerId));
 }
 
 function moveInteriorArmies({ mine, byId, owned, playerId, virtualArmies, orders }) {
@@ -192,24 +223,38 @@ function visibleTargets(source, byId, owned) {
     .filter((target) => target?.visible && !owned.has(target.id) && target.armies !== null);
 }
 
-function sourcePriority(source, byId, owned, bonusById, playerId) {
+function sourcePriority(source, byId, owned, bonusById, bonusPresence, playerId) {
   const targets = visibleTargets(source, byId, owned);
   if (!targets.length) return source.armies * 0.1;
-  return targets.reduce((total, target) => total + targetValue(target, bonusById, playerId), 0)
+  return targets.reduce((total, target) => total + targetValue(target, bonusById, bonusPresence, playerId), 0)
     + Math.max(0, source.armies - 1) * 0.5;
 }
 
-function compareTargets(a, b, bonusById, playerId) {
+function compareTargets(a, b, bonusById, bonusPresence, playerId) {
   const needed = requiredAttackers(a.armies) - requiredAttackers(b.armies);
   if (needed !== 0) return needed;
-  return targetValue(b, bonusById, playerId) - targetValue(a, bonusById, playerId);
+  return targetValue(b, bonusById, bonusPresence, playerId) - targetValue(a, bonusById, bonusPresence, playerId);
 }
 
-function targetValue(target, bonusById, playerId) {
-  const bonusValue = bonusById.get(target.bonusId)?.value ?? target.bonusValue ?? 0;
+function targetValue(target, bonusById, bonusPresence, playerId) {
+  const bonus = bonusById.get(target.bonusId);
+  const bonusValue = bonus?.value ?? target.bonusValue ?? 0;
+  const ownedInBonus = bonusPresence.get(target.bonusId) ?? 0;
+  const missingAfterCapture = bonus ? Math.max(0, bonus.territories.length - ownedInBonus - 1) : 99;
+  const presenceValue = ownedInBonus > 0
+    ? 12 + ownedInBonus * 2 + (missingAfterCapture <= 1 ? 10 : 0)
+    : 0;
   const enemyValue = target.owner !== null && target.owner !== playerId ? 18 : 0;
   const wastelandPenalty = target.armies >= 10 ? 12 : 0;
-  return 10 + bonusValue + enemyValue - target.armies * 1.5 - wastelandPenalty;
+  return 10 + bonusValue + presenceValue + enemyValue - target.armies * 1.5 - wastelandPenalty;
+}
+
+function countBonusPresence(mine) {
+  const counts = new Map();
+  for (const territory of mine) {
+    counts.set(territory.bonusId, (counts.get(territory.bonusId) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function requiredAttackers(defenders) {

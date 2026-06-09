@@ -2240,7 +2240,6 @@ export const MEDIUM_EARTH_TOPOLOGY = {
     ],
     "t53": [
       "t138",
-      "t148",
       "t21",
       "t97"
     ],
@@ -2710,8 +2709,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
     ],
     "t148": [
       "t33",
-      "t42",
-      "t53"
+      "t42"
     ],
     "t151": [
       "t47"
@@ -3357,10 +3355,6 @@ export const MEDIUM_EARTH_TOPOLOGY = {
     [
       "t148",
       "t42"
-    ],
-    [
-      "t148",
-      "t53"
     ],
     [
       "t15",

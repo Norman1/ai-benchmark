@@ -43,6 +43,11 @@ test("central america and west us bonus borders match the ladder map", () => {
   assert.equal(MEDIUM_EARTH_MAP.territories.find((territory) => territory.id === "t31").bonusId, "central_america");
 });
 
+test("east africa 148 does not connect directly to middle east 53", () => {
+  assert.ok(!MEDIUM_EARTH_MAP.adjacency.t148.includes("t53"));
+  assert.ok(!MEDIUM_EARTH_MAP.adjacency.t53.includes("t148"));
+});
+
 test("official geometry covers every engine territory", async () => {
   const geometry = JSON.parse(await readFile(new URL("../public/assets/medium-earth-geometry.json", import.meta.url), "utf8"));
   const geometryIds = new Set(geometry.territories.map((territory) => territory.id));
