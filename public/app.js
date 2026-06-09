@@ -244,19 +244,27 @@ function buildBoard(map, geometry) {
     territoryList.push(merged);
   }
 
-  drawRouteHints(map, territories, routeLayer);
+  drawRouteHints(map, geometry, territories, routeLayer);
   drawBonusMarkers(map, geometry, bonusLayer);
 
   return { territories, territoryList, eventLayer };
 }
 
-function drawRouteHints(map, territories, routeLayer) {
-  for (const [fromId, toId] of map.edges) {
+function drawRouteHints(map, geometry, territories, routeLayer) {
+  if (geometry.routes?.length) {
+    for (const route of geometry.routes) {
+      routeLayer.append(svg("path", {
+        d: route.path,
+        class: "route"
+      }));
+    }
+    return;
+  }
+
+  for (const [fromId, toId] of map.routeEdges ?? []) {
     const from = territories.get(fromId);
     const to = territories.get(toId);
     if (!from || !to) continue;
-    const distance = Math.hypot(from.labelPoint.x - to.labelPoint.x, from.labelPoint.y - to.labelPoint.y);
-    if (distance < 85) continue;
     routeLayer.append(svg("line", {
       x1: from.labelPoint.x,
       y1: from.labelPoint.y,

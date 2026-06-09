@@ -36,12 +36,6 @@ npm test
 - cycle move order
 - 0% luck, straight round, 60% offensive kill rate, 70% defensive kill rate
 
-The generated map data is in `src/engine/medium-earth-map.generated.js`; engine behavior is in `src/engine/game.js`; bot process isolation is in `src/runner`.
+The fixed map topology is maintained in `src/engine/medium-earth-topology.js`. It contains territory IDs, bonus membership, bonus values, adjacency lists, and explicit overseas route edges. Engine behavior is in `src/engine/game.js`; bot process isolation is in `src/runner`.
 
-The spectator board renders real SVG territory paths generated from War.app's `1748/d2_3.map` vision asset. Live rendering fills those territory paths from game state and draws army numbers as SVG text, so no static board screenshot is used for gameplay.
-
-Regenerate the SVG geometry and engine map after changing the map pipeline:
-
-```powershell
-python scripts\build-official-medium-earth.py
-```
+The spectator board renders SVG territory paths from `public/assets/medium-earth-geometry.json`. That file is rendering geometry only. The engine never derives rules, bonuses, or connections from the SVG paths.

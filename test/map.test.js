@@ -7,11 +7,30 @@ import { RULES } from "../src/engine/rules.js";
 
 test("map graph is internally consistent", () => {
   assert.equal(assertMapIntegrity(MEDIUM_EARTH_MAP), true);
+  assert.equal(MEDIUM_EARTH_MAP.topologySource, "hand-maintained");
   assert.equal(MEDIUM_EARTH_MAP.bonuses.filter((bonus) => bonus.value > 0).length, 23);
   assert.equal(MEDIUM_EARTH_MAP.territories.length, 131);
   assert.equal(MEDIUM_EARTH_MAP.bonuses.length, 27);
+  assert.equal(MEDIUM_EARTH_MAP.routeEdges.length, 27);
   for (const territory of MEDIUM_EARTH_MAP.territories) {
     assert.ok(MEDIUM_EARTH_MAP.adjacency[territory.id].length > 0, `${territory.id} must have at least one neighbor`);
+  }
+});
+
+test("explicit topology includes overseas route connections", () => {
+  const expectedRoutes = [
+    ["t38", "t72"],
+    ["t8", "t114"],
+    ["t1", "t8"],
+    ["t3", "t93"],
+    ["t64", "t77"],
+    ["t20", "t91"],
+    ["t15", "t20"],
+    ["t59", "t85"]
+  ];
+  for (const [from, to] of expectedRoutes) {
+    assert.ok(MEDIUM_EARTH_MAP.adjacency[from].includes(to), `${from} must connect to ${to}`);
+    assert.ok(MEDIUM_EARTH_MAP.adjacency[to].includes(from), `${to} must connect to ${from}`);
   }
 });
 

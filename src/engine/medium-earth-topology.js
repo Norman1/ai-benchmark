@@ -1,4 +1,4 @@
-export const MEDIUM_EARTH_MAP_DATA = {
+export const MEDIUM_EARTH_TOPOLOGY = {
   "id": "medium-earth-traditional",
   "name": "Medium Earth Traditional",
   "sourceMapId": 1748,
@@ -747,7 +747,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "bonusId": "west_us",
       "bonusName": "West US",
       "bonusValue": 5,
-      "x": 186.0,
+      "x": 186,
       "y": 167.909,
       "color": "#2b8f32",
       "zeroBonus": false
@@ -1931,7 +1931,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
   ],
   "adjacency": {
     "t1": [
-      "t48"
+      "t48",
+      "t8"
     ],
     "t2": [
       "t104",
@@ -1944,7 +1945,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
     "t3": [
       "t125",
       "t147",
-      "t64"
+      "t64",
+      "t93"
     ],
     "t5": [
       "t119",
@@ -1957,14 +1959,20 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t25"
     ],
     "t7": [
+      "t114",
       "t26",
+      "t47",
       "t50"
     ],
     "t8": [
+      "t1",
+      "t114",
+      "t124",
       "t31"
     ],
     "t9": [
       "t127",
+      "t54",
       "t62",
       "t78",
       "t88"
@@ -1973,6 +1981,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t34",
       "t39",
       "t51",
+      "t54",
       "t80"
     ],
     "t11": [
@@ -1994,7 +2003,9 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t59"
     ],
     "t15": [
-      "t134"
+      "t134",
+      "t20",
+      "t91"
     ],
     "t16": [
       "t108",
@@ -2021,7 +2032,9 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t71"
     ],
     "t20": [
-      "t128"
+      "t128",
+      "t15",
+      "t91"
     ],
     "t21": [
       "t138",
@@ -2030,7 +2043,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t53"
     ],
     "t22": [
-      "t59"
+      "t59",
+      "t98"
     ],
     "t23": [
       "t19",
@@ -2050,6 +2064,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
     "t25": [
       "t143",
       "t152",
+      "t28",
       "t31",
       "t6"
     ],
@@ -2063,10 +2078,13 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t27": [
       "t12",
-      "t122"
+      "t122",
+      "t90"
     ],
     "t28": [
-      "t132"
+      "t132",
+      "t141",
+      "t25"
     ],
     "t29": [
       "t119",
@@ -2131,7 +2149,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t38": [
       "t107",
-      "t67"
+      "t67",
+      "t72"
     ],
     "t39": [
       "t10",
@@ -2177,6 +2196,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t46": [
       "t103",
+      "t114",
       "t129",
       "t18",
       "t30",
@@ -2184,10 +2204,16 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t68"
     ],
     "t47": [
-      "t151"
+      "t151",
+      "t48",
+      "t7",
+      "t81"
     ],
     "t48": [
-      "t1"
+      "t1",
+      "t122",
+      "t47",
+      "t81"
     ],
     "t49": [
       "t26",
@@ -2219,7 +2245,9 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t97"
     ],
     "t54": [
-      "t51"
+      "t10",
+      "t51",
+      "t9"
     ],
     "t55": [
       "t119",
@@ -2245,6 +2273,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t13",
       "t22",
       "t41",
+      "t85",
       "t98"
     ],
     "t60": [
@@ -2255,10 +2284,12 @@ export const MEDIUM_EARTH_MAP_DATA = {
     "t61": [
       "t100",
       "t112",
+      "t154",
       "t58"
     ],
     "t62": [
       "t127",
+      "t155",
       "t9"
     ],
     "t63": [
@@ -2272,7 +2303,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t125",
       "t141",
       "t147",
-      "t3"
+      "t3",
+      "t77"
     ],
     "t65": [
       "t103",
@@ -2314,6 +2346,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t72": [
       "t129",
+      "t38",
       "t65"
     ],
     "t73": [
@@ -2338,12 +2371,14 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t77": [
       "t37",
+      "t64",
       "t73",
       "t76",
       "t99"
     ],
     "t78": [
       "t127",
+      "t154",
       "t9"
     ],
     "t79": [
@@ -2359,6 +2394,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t34"
     ],
     "t81": [
+      "t47",
+      "t48",
       "t90"
     ],
     "t82": [
@@ -2381,7 +2418,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t99"
     ],
     "t85": [
-      "t128"
+      "t128",
+      "t59"
     ],
     "t86": [
       "t120",
@@ -2396,14 +2434,18 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t9"
     ],
     "t90": [
+      "t27",
       "t49",
       "t81"
     ],
     "t91": [
-      "t12"
+      "t12",
+      "t15",
+      "t20"
     ],
     "t93": [
-      "t128"
+      "t128",
+      "t3"
     ],
     "t97": [
       "t138",
@@ -2413,6 +2455,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t98": [
       "t145",
+      "t22",
       "t41",
       "t42",
       "t59"
@@ -2502,7 +2545,11 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t79"
     ],
     "t114": [
-      "t60"
+      "t129",
+      "t46",
+      "t60",
+      "t7",
+      "t8"
     ],
     "t117": [
       "t130",
@@ -2531,7 +2578,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
     "t122": [
       "t12",
       "t134",
-      "t27"
+      "t27",
+      "t48"
     ],
     "t123": [
       "t104",
@@ -2543,7 +2591,8 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t108",
       "t131",
       "t143",
-      "t31"
+      "t31",
+      "t8"
     ],
     "t125": [
       "t3",
@@ -2561,6 +2610,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t93"
     ],
     "t129": [
+      "t114",
       "t46",
       "t65",
       "t72"
@@ -2615,6 +2665,7 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t141": [
       "t147",
+      "t28",
       "t64"
     ],
     "t143": [
@@ -2680,10 +2731,13 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     "t154": [
       "t106",
-      "t153"
+      "t153",
+      "t61",
+      "t78"
     ],
     "t155": [
-      "t123"
+      "t123",
+      "t62"
     ],
     "t156": [
       "t110",
@@ -2697,6 +2751,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t48"
     ],
     [
+      "t1",
+      "t8"
+    ],
+    [
       "t10",
       "t34"
     ],
@@ -2707,6 +2765,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t10",
       "t51"
+    ],
+    [
+      "t10",
+      "t54"
     ],
     [
       "t10",
@@ -2910,7 +2972,23 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     [
       "t114",
+      "t129"
+    ],
+    [
+      "t114",
+      "t46"
+    ],
+    [
+      "t114",
       "t60"
+    ],
+    [
+      "t114",
+      "t7"
+    ],
+    [
+      "t114",
+      "t8"
     ],
     [
       "t117",
@@ -3001,6 +3079,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t27"
     ],
     [
+      "t122",
+      "t48"
+    ],
+    [
       "t123",
       "t155"
     ],
@@ -3019,6 +3101,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t124",
       "t31"
+    ],
+    [
+      "t124",
+      "t8"
     ],
     [
       "t125",
@@ -3170,6 +3256,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     [
       "t141",
+      "t28"
+    ],
+    [
+      "t141",
       "t64"
     ],
     [
@@ -3273,6 +3363,14 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t53"
     ],
     [
+      "t15",
+      "t20"
+    ],
+    [
+      "t15",
+      "t91"
+    ],
+    [
       "t151",
       "t47"
     ],
@@ -3295,6 +3393,18 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t153",
       "t74"
+    ],
+    [
+      "t154",
+      "t61"
+    ],
+    [
+      "t154",
+      "t78"
+    ],
+    [
+      "t155",
+      "t62"
     ],
     [
       "t156",
@@ -3337,6 +3447,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t70"
     ],
     [
+      "t20",
+      "t91"
+    ],
+    [
       "t21",
       "t43"
     ],
@@ -3351,6 +3465,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t22",
       "t59"
+    ],
+    [
+      "t22",
+      "t98"
     ],
     [
       "t23",
@@ -3390,6 +3508,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     [
       "t25",
+      "t28"
+    ],
+    [
+      "t25",
       "t31"
     ],
     [
@@ -3413,6 +3535,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t7"
     ],
     [
+      "t27",
+      "t90"
+    ],
+    [
       "t29",
       "t5"
     ],
@@ -3427,6 +3553,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t3",
       "t64"
+    ],
+    [
+      "t3",
+      "t93"
     ],
     [
       "t30",
@@ -3517,6 +3647,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t67"
     ],
     [
+      "t38",
+      "t72"
+    ],
+    [
       "t40",
       "t43"
     ],
@@ -3569,6 +3703,22 @@ export const MEDIUM_EARTH_MAP_DATA = {
       "t68"
     ],
     [
+      "t47",
+      "t48"
+    ],
+    [
+      "t47",
+      "t7"
+    ],
+    [
+      "t47",
+      "t81"
+    ],
+    [
+      "t48",
+      "t81"
+    ],
+    [
       "t49",
       "t5"
     ],
@@ -3587,6 +3737,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t53",
       "t97"
+    ],
+    [
+      "t54",
+      "t9"
     ],
     [
       "t55",
@@ -3614,6 +3768,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     ],
     [
       "t59",
+      "t85"
+    ],
+    [
+      "t59",
       "t98"
     ],
     [
@@ -3623,6 +3781,10 @@ export const MEDIUM_EARTH_MAP_DATA = {
     [
       "t63",
       "t74"
+    ],
+    [
+      "t64",
+      "t77"
     ],
     [
       "t65",
@@ -3713,5 +3875,116 @@ export const MEDIUM_EARTH_MAP_DATA = {
     "east_china",
     "indonesia",
     "southeast_asia"
-  ]
+  ],
+  "routeEdges": [
+    [
+      "t1",
+      "t8"
+    ],
+    [
+      "t10",
+      "t54"
+    ],
+    [
+      "t114",
+      "t129"
+    ],
+    [
+      "t114",
+      "t46"
+    ],
+    [
+      "t114",
+      "t7"
+    ],
+    [
+      "t114",
+      "t8"
+    ],
+    [
+      "t122",
+      "t48"
+    ],
+    [
+      "t124",
+      "t8"
+    ],
+    [
+      "t141",
+      "t28"
+    ],
+    [
+      "t15",
+      "t20"
+    ],
+    [
+      "t15",
+      "t91"
+    ],
+    [
+      "t154",
+      "t61"
+    ],
+    [
+      "t154",
+      "t78"
+    ],
+    [
+      "t155",
+      "t62"
+    ],
+    [
+      "t20",
+      "t91"
+    ],
+    [
+      "t22",
+      "t98"
+    ],
+    [
+      "t25",
+      "t28"
+    ],
+    [
+      "t27",
+      "t90"
+    ],
+    [
+      "t3",
+      "t93"
+    ],
+    [
+      "t38",
+      "t72"
+    ],
+    [
+      "t47",
+      "t48"
+    ],
+    [
+      "t47",
+      "t7"
+    ],
+    [
+      "t47",
+      "t81"
+    ],
+    [
+      "t48",
+      "t81"
+    ],
+    [
+      "t54",
+      "t9"
+    ],
+    [
+      "t59",
+      "t85"
+    ],
+    [
+      "t64",
+      "t77"
+    ]
+  ],
+  "topologySource": "hand-maintained"
 };
