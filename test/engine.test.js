@@ -90,6 +90,40 @@ test("deployments happen before attacks and a 3v2 straight-round attack captures
   assert.equal(game.territories[target].armies, 2);
 });
 
+test("a failed attack retreats surviving attackers to the source", () => {
+  const draft = createDraft(2);
+  const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
+  const game = new WarGame({ seed: 2, draft, pickOrders });
+  const source = game.allocation.starts[0][0];
+  const reserve = game.allocation.starts[0][1];
+  const target = game.map.adjacency[source].find((territoryId) => game.territories[territoryId].owner === null);
+  assert.ok(target);
+  game.territories[source].armies = 13;
+  game.territories[target].armies = 10;
+
+  game.runTurn([
+    {
+      deployments: [{ territoryId: reserve, armies: game.calculateIncome(0) }],
+      orders: [
+        { from: source, to: target, armies: 12 },
+        { from: source, to: target, armies: 4 }
+      ]
+    },
+    { deployments: [], orders: [] }
+  ]);
+
+  // 12 attack 10: kills round(12 * 0.6) = 7 of 10 defenders, loses round(10 * 0.7) = 7.
+  const attackFrame = game.replay.frames.find((frame) => frame.events[frame.currentEventIndex]?.type === "attack");
+  const attack = attackFrame.events[attackFrame.currentEventIndex];
+  assert.equal(attack.captured, false);
+  assert.equal(attack.killedAttackers, 7);
+  assert.equal(attack.killedDefenders, 7);
+  assert.equal(attack.remainingAttackers, 5);
+  assert.equal(game.territories[target].owner, null);
+  assert.equal(game.territories[target].armies, 3);
+  assert.equal(game.territories[source].armies, 6);
+});
+
 test("replay records a frame for each executed order", () => {
   const draft = createDraft(2);
   const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];

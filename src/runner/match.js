@@ -20,6 +20,7 @@ export async function runMatchByIds(botAId, botBId, options = {}) {
 export async function runMatch(botManifests, options = {}) {
   const seed = normalizeSeed(options.seed ?? Date.now());
   const maxTurns = options.maxTurns ?? RULES.maxTurns;
+  const timeLimitMs = options.timeLimitMs ?? RULES.botTimeLimitMs;
   const draft = createDraft(seed, MEDIUM_EARTH_MAP);
   const isolation = await prepareBotSandboxes(botManifests, { enabled: options.isolateBotSources !== false });
   const activeManifests = isolation.manifests;
@@ -29,7 +30,7 @@ export async function runMatch(botManifests, options = {}) {
 
   try {
     for (const manifest of activeManifests) {
-      bots.push(new BotProcess(manifest, { timeLimitMs: options.timeLimitMs }));
+      bots.push(new BotProcess(manifest, { timeLimitMs }));
     }
 
     for (let playerId = 0; playerId < 2; playerId += 1) {
@@ -38,7 +39,8 @@ export async function runMatch(botManifests, options = {}) {
         protocolVersion: 1,
         playerId,
         botSeed: botSeed(seed, playerId, "pick"),
-        rules: RULES,
+        timeLimitMs,
+        rules: { ...RULES, botTimeLimitMs: timeLimitMs },
         map: publicMap(),
         distribution: draft.distribution,
         availablePicks: draft.availablePicks,
@@ -71,7 +73,7 @@ export async function runMatch(botManifests, options = {}) {
           playerId,
           botSeed: botSeed(seed, playerId, `turn:${game.turn}`),
           turn: game.turn,
-          timeLimitMs: options.timeLimitMs ?? RULES.botTimeLimitMs,
+          timeLimitMs,
           observation: game.buildObservation(playerId)
         }, failures);
         if (failures.length > failureCount) break;

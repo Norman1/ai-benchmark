@@ -69,6 +69,7 @@ node src/cli.js selfplay --bot my-bot --against baseline --games 50 --writeRepla
 - 5 second bot request timeout by default, configurable per match
 - one army must stand guard
 - multi-attack off
+- failed attacks retreat surviving attackers to their source
 - cycle move order
 - 0% luck, straight round, 60% offensive kill rate, 70% defensive kill rate
 - winner is decided by elimination only; reaching the max turn safety limit is a draw

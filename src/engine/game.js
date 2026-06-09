@@ -1,4 +1,4 @@
-import { MEDIUM_EARTH_MAP, getTerritory } from "./map.js";
+import { MEDIUM_EARTH_MAP } from "./map.js";
 import { SeededRandom, normalizeSeed } from "./random.js";
 import { RULES, straightRound } from "./rules.js";
 
@@ -79,7 +79,6 @@ export class WarGame {
     this.finished = false;
     this.result = null;
     this.territories = {};
-    this.conqueredThisTurn = [false, false];
     this.events = [];
 
     this.#initializeTerritories();
@@ -103,7 +102,6 @@ export class WarGame {
         territories: map.territories,
         bonuses: map.bonuses,
         adjacency: map.adjacency,
-        edges: map.edges,
         routeEdges: map.routeEdges
       },
       players: this.botNames,
@@ -324,7 +322,6 @@ export class WarGame {
       const order = queue.shift();
       const result = this.#executeAttackTransfer(playerId, order, movable, events, pushStepFrame);
       if (result.executed) return result;
-      if (result.consumedDelay) return result;
     }
     return { executed: false };
   }
@@ -376,8 +373,9 @@ export class WarGame {
       target.armies = survivingAttackers;
       movable[playerId][order.to] = 0;
       if (defenderOwner === 0 || defenderOwner === 1) movable[defenderOwner][order.to] = 0;
-      this.conqueredThisTurn[playerId] = true;
     } else {
+      // Survivors retreat home but stay committed for the turn: their movable was already spent.
+      source.armies += survivingAttackers;
       target.armies = Math.max(1, defendingArmies - killedDefenders);
       if (defenderOwner === 0 || defenderOwner === 1) {
         movable[defenderOwner][order.to] = Math.min(
@@ -398,7 +396,7 @@ export class WarGame {
       killedAttackers,
       killedDefenders,
       captured: captures,
-      remainingAttackers: captures ? survivingAttackers : 0,
+      remainingAttackers: survivingAttackers,
       remainingDefenders: captures ? 0 : target.armies,
       mode: order.mode,
       byPercent: order.byPercent
@@ -606,8 +604,4 @@ export function summarizeReplay(replay) {
     territoryCounts: counts,
     incomes: finalFrame.incomes.map((income) => income.total)
   };
-}
-
-export function territoryInfo(id, map = MEDIUM_EARTH_MAP) {
-  return getTerritory(map, id);
 }

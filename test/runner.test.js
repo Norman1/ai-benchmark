@@ -32,6 +32,35 @@ test("bot subprocess requests enforce the configured timeout", async () => {
   }
 });
 
+test("a late reply after a timeout does not satisfy the next request", async () => {
+  const bot = new BotProcess({
+    id: "late-reply-bot",
+    command: process.execPath,
+    args: ["-e", `
+const { createInterface } = require("node:readline");
+const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+let chain = Promise.resolve();
+rl.on("line", (line) => {
+  const message = JSON.parse(line);
+  const delayMs = message.tag === "slow" ? 300 : 0;
+  chain = chain.then(() => new Promise((resolve) => setTimeout(() => {
+    process.stdout.write(JSON.stringify({ echo: message.tag }) + "\\n");
+    resolve();
+  }, delayMs)));
+});
+`],
+    cwd: process.cwd()
+  }, { timeLimitMs: 50 });
+
+  try {
+    await assert.rejects(bot.request({ tag: "slow" }), /timed out after 50ms/);
+    const reply = await bot.request({ tag: "fast" }, { timeoutMs: 2000 });
+    assert.deepEqual(reply, { echo: "fast" });
+  } finally {
+    bot.stop();
+  }
+});
+
 test("runner max turn safety limit produces a draw", async () => {
   const { summary } = await runMatchByIds("starter-greedy", "starter-greedy", {
     seed: 42,

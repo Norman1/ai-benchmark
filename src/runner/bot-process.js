@@ -7,6 +7,8 @@ export class BotProcess {
     this.manifest = manifest;
     this.timeLimitMs = timeLimitMs;
     this.pending = [];
+    this.requestSeq = 0;
+    this.replySeq = 0;
     this.logs = [];
     this.closed = false;
     this.proc = spawn(manifest.command, manifest.args, {
@@ -41,13 +43,16 @@ export class BotProcess {
     this.proc.stdin.write(`${JSON.stringify(message)}\n`);
     if (!expectReply) return null;
 
+    const seq = this.requestSeq;
+    this.requestSeq += 1;
     return await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        const index = this.pending.findIndex((entry) => entry.resolve === resolve);
+        const index = this.pending.findIndex((entry) => entry.seq === seq);
         if (index >= 0) this.pending.splice(index, 1);
         reject(new Error(`Bot ${this.manifest.id} timed out after ${timeoutMs}ms.`));
       }, timeoutMs);
       this.pending.push({
+        seq,
         resolve: (value) => {
           clearTimeout(timeout);
           resolve(value);
@@ -72,13 +77,19 @@ export class BotProcess {
   }
 
   #handleLine(line) {
-    if (!this.pending.length) return;
-    if (line.length > RULES.maxBotLineLength) {
-      const pending = this.pending.shift();
+    // Replies are matched to requests by arrival order. A line written while no
+    // reply is owed is unsolicited output; a reply to a request that already
+    // timed out consumes its slot but must not satisfy a later request.
+    if (this.replySeq >= this.requestSeq) return;
+    const seq = this.replySeq;
+    this.replySeq += 1;
+    const index = this.pending.findIndex((entry) => entry.seq === seq);
+    if (index < 0) return;
+    const [pending] = this.pending.splice(index, 1);
+    if (Buffer.byteLength(line, "utf8") > RULES.maxBotLineLength) {
       pending.reject(new Error(`Bot ${this.manifest.id} wrote a line larger than ${RULES.maxBotLineLength} bytes.`));
       return;
     }
-    const pending = this.pending.shift();
     try {
       pending.resolve(JSON.parse(line));
     } catch (error) {

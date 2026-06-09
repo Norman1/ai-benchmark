@@ -2,14 +2,6 @@ import { MEDIUM_EARTH_TOPOLOGY } from "./medium-earth-topology.js";
 
 export const MEDIUM_EARTH_MAP = deepFreeze(MEDIUM_EARTH_TOPOLOGY);
 
-export function getTerritory(map, id) {
-  return map.territories.find((territory) => territory.id === id);
-}
-
-export function getBonus(map, id) {
-  return map.bonuses.find((bonus) => bonus.id === id);
-}
-
 export function assertMapIntegrity(map = MEDIUM_EARTH_MAP) {
   const territoryIds = new Set(map.territories.map((territory) => territory.id));
   const errors = [];

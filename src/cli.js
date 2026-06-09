@@ -16,7 +16,7 @@ if (command === "bots") {
   const seed = options.seed ?? options._[2] ?? 1;
   const result = await runMatchByIds(botA, botB, {
     seed,
-    writeReplay: options.writeReplay !== "false",
+    writeReplay: booleanFlag(options.writeReplay, true),
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[3], RULES.botTimeLimitMs)
   });
   console.log(JSON.stringify(result.summary, null, 2));
@@ -24,7 +24,7 @@ if (command === "bots") {
   const result = await runTournament({
     gamesPerPair: positiveNumber(options.gamesPerPair ?? options.games ?? options._[0], 10),
     seed: options.seed ?? options._[1] ?? "cli-tournament",
-    writeReplay: options.writeReplay === "true",
+    writeReplay: booleanFlag(options.writeReplay, false),
     timeLimitMs: positiveNumber(options.timeLimitMs ?? options.botTimeLimitMs ?? options._[2], RULES.botTimeLimitMs)
   });
   console.log(JSON.stringify(result, null, 2));
@@ -49,8 +49,8 @@ if (command === "bots") {
     against: options.against ?? options._[1] ?? "baseline",
     games: positiveNumber(options.games ?? options.gamesPerOpponent ?? options._[2], 20),
     seed: options.seed ?? options._[3] ?? "cli-selfplay",
-    writeReplay: options.writeReplay === "true",
-    writeRun: options.writeRun !== "false",
+    writeReplay: booleanFlag(options.writeReplay, false),
+    writeRun: booleanFlag(options.writeRun, true),
     botsDir: options.botsDir,
     baselinesDir: options.baselinesDir ?? options._[6],
     runDir: options.runDir ?? options._[7],
@@ -74,8 +74,8 @@ function parseArgs(args) {
     const arg = args[i];
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
-      const value = args[i + 1]?.startsWith("--") ? true : args[++i];
-      parsed[key] = value;
+      const next = args[i + 1];
+      parsed[key] = next === undefined || next.startsWith("--") ? true : args[++i];
     } else {
       parsed._.push(arg);
     }
@@ -86,4 +86,10 @@ function parseArgs(args) {
 function positiveNumber(value, fallback) {
   const number = Number(value ?? fallback);
   return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function booleanFlag(value, fallback) {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return fallback;
 }

@@ -22,7 +22,7 @@ Create a folder under `bots/` with a `bot.json` file:
 
 ## Runtime Contract
 
-- Reply before `botTimeLimitMs` expires. Current default: `5000ms`.
+- Reply before the request's `timeLimitMs` expires. Current default: `5000ms`. Both `pick` and `turn` requests carry the effective per-match value.
 - Maximum stdout line length is `1MB`.
 - A malformed JSON reply, timeout, or process exit can lose the game.
 - Invalid game orders are ignored by the engine.
@@ -59,6 +59,7 @@ Pick request shape:
   "protocolVersion": 1,
   "playerId": 0,
   "botSeed": 3819085840,
+  "timeLimitMs": 5000,
   "rules": {},
   "map": {
     "id": "medium-earth-traditional",
@@ -168,6 +169,7 @@ Rules that matter for order generation:
 
 - One army must stand guard, so a territory with `N` armies can move at most `N - 1`.
 - Multi-attack is off, so armies that capture a territory cannot move again that turn.
+- If an attack fails to capture, surviving attackers retreat to the source territory. They also cannot move again that turn.
 - Deployments and attacks/transfers use cyclic move order. The first mover alternates by turn, and within a turn the queues alternate by round.
 - Offensive kill rate is 60%; defensive kill rate is 70%.
 - Luck is 0% with straight rounding.
