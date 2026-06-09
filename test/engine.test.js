@@ -19,6 +19,19 @@ test("starting territories and neutral armies are initialized correctly", () => 
   }
 });
 
+test("replay starts with territory distribution and submitted pick frames", () => {
+  const draft = createDraft(1);
+  const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
+  const game = new WarGame({ seed: 1, draft, pickOrders });
+  assert.equal(game.replay.frames[0].phase, "distribution");
+  assert.equal(game.replay.frames[0].turn, 0);
+  assert.equal(game.replay.frames[0].revealedEventCount, 0);
+  assert.equal(game.replay.frames.filter((frame) => frame.phase === "pick").length, 12);
+  assert.equal(game.replay.frames.find((frame) => frame.phase === "pick").events.length, 12);
+  assert.equal(game.replay.frames.find((frame) => frame.phase === "initial").turn, 1);
+  assert.deepEqual(game.replay.setup.submittedPicks, pickOrders);
+});
+
 test("deployments happen before attacks and a 3v2 straight-round attack captures", () => {
   const draft = createDraft(2);
   const pickOrders = [draft.availablePicks.slice(0, 6), draft.availablePicks.slice(6, 12)];
@@ -57,7 +70,10 @@ test("replay records a frame for each executed order", () => {
     { deployments: [], orders: [] }
   ]);
 
-  const orderFrames = game.replay.frames.filter((frame) => Number.isInteger(frame.currentEventIndex));
+  const orderFrames = game.replay.frames.filter((frame) => {
+    const event = frame.events[frame.currentEventIndex];
+    return event && event.type !== "pick";
+  });
   assert.ok(orderFrames.length >= 2);
   assert.equal(orderFrames[0].events[orderFrames[0].currentEventIndex].type, "deploy");
   assert.equal(orderFrames.at(-1).events[orderFrames.at(-1).currentEventIndex].type, "attack");

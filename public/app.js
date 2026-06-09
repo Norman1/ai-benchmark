@@ -32,6 +32,7 @@ const COLORS = {
   event: "rgba(246, 222, 94, 0.88)",
   neutral: "#cfcfca",
   neutralText: "#111111",
+  distribution: "#00a713",
   selected: "#ffe276",
   player: [
     { fill: "#6f18b7", text: "#f8f0ff", stroke: "#241133" },
@@ -166,12 +167,18 @@ function renderFrame() {
   const currentOrder = Number.isInteger(frame.currentEventIndex)
     ? `, order ${frame.currentEventIndex + 1} of ${frame.events.length}`
     : "";
-  els.turnTitle.textContent = frame.phase === "initial"
-    ? `Setup: picks allocated, ${setup.wastelands.length} wastelands`
-    : `Turn ${frame.turn}: ${frame.events.length} executed orders`;
-  els.historyMeta.textContent = frame.phase === "initial"
-    ? `Beginning of ${lastTurn} turns`
-    : `Turn ${frame.turn} of ${lastTurn}${currentOrder}`;
+  if (isDistributionFrame(frame)) {
+    els.turnTitle.textContent = "History: Territory Distribution";
+    els.historyMeta.textContent = frame.phase === "distribution"
+      ? "Distribution spots"
+      : `Picks ${frame.currentEventIndex + 1} of ${frame.events.length}`;
+  } else if (frame.phase === "initial") {
+    els.turnTitle.textContent = `Setup: picks allocated, ${setup.wastelands.length} wastelands`;
+    els.historyMeta.textContent = `Beginning of ${lastTurn} turns`;
+  } else {
+    els.turnTitle.textContent = `Turn ${frame.turn}: ${frame.events.length} executed orders`;
+    els.historyMeta.textContent = `Turn ${frame.turn} of ${lastTurn}${currentOrder}`;
+  }
   renderScores(frame);
   renderEvents(frame);
   renderTerritoryDetails(frame);
@@ -179,16 +186,22 @@ function renderFrame() {
 
 function renderMapState(frame) {
   const visible = visibleTerritories(frame);
+  const distribution = distributionRenderState(frame);
   for (const territory of board.territoryList) {
     const state = frame.territories[territory.id];
     if (!state) continue;
     const fogged = visible && !visible.has(territory.id);
-    const owned = state.owner === 0 || state.owner === 1;
-    const fill = owned ? COLORS.player[state.owner].fill : COLORS.neutral;
-    const textFill = owned ? COLORS.player[state.owner].text : COLORS.neutralText;
-    const textStroke = owned ? COLORS.player[state.owner].stroke : "rgba(245, 245, 241, 0.9)";
+    const picked = distribution?.picksByTerritory.get(territory.id);
+    const pickable = distribution?.availablePicks.has(territory.id) && !distribution?.wastelands.has(territory.id);
+    const owned = picked || state.owner === 0 || state.owner === 1;
+    const playerId = picked?.playerId ?? state.owner;
+    const fill = picked
+      ? COLORS.player[picked.playerId].fill
+      : (pickable ? COLORS.distribution : (owned ? COLORS.player[playerId].fill : COLORS.neutral));
+    const textFill = owned ? COLORS.player[playerId].text : COLORS.neutralText;
+    const textStroke = owned ? COLORS.player[playerId].stroke : "rgba(245, 245, 241, 0.9)";
     const selected = selectedTerritoryId === territory.id;
-    const ownerName = owned ? `player-${state.owner}` : "neutral";
+    const ownerName = owned ? `player-${playerId}` : "neutral";
 
     territory.path.style.fill = fill;
     territory.path.dataset.owner = ownerName;
@@ -196,7 +209,9 @@ function renderMapState(frame) {
     territory.path.classList.toggle("selected", selected);
     territory.path.classList.toggle("bonus-highlight", selectedBonusId === territory.bonusId);
     territory.path.classList.toggle("fogged", fogged);
-    territory.label.textContent = fogged ? "" : String(state.armies);
+    territory.path.classList.toggle("distribution", pickable && !picked);
+    territory.path.classList.toggle("pick", Boolean(picked));
+    territory.label.textContent = fogged ? "" : String(picked?.priority ?? state.armies);
     territory.label.style.fill = textFill;
     territory.label.style.stroke = selected ? COLORS.selected : textStroke;
     territory.label.dataset.owner = ownerName;
@@ -204,6 +219,7 @@ function renderMapState(frame) {
     territory.label.classList.toggle("selected", selected);
     territory.label.classList.toggle("bonus-highlight", selectedBonusId === territory.bonusId);
     territory.label.classList.toggle("fogged", fogged);
+    territory.label.classList.toggle("pick", Boolean(picked));
   }
   for (const [bonusId, marker] of board.bonusMarkers) {
     const selected = selectedBonusId === bonusId;
@@ -274,22 +290,23 @@ function buildBoard(map, geometry) {
     });
     path.style.stroke = territory.color;
     path.addEventListener("click", (event) => selectTerritory(event, territory.id));
+    territoryLayer.append(path);
+    const labelPoint = chooseLabelPoint(path, territoryGeometry.label);
 
     const label = svg("text", {
-      x: territoryGeometry.label.x,
-      y: territoryGeometry.label.y,
+      x: labelPoint.x,
+      y: labelPoint.y,
       class: "army-label",
       "data-id": territory.id
     });
     label.addEventListener("click", (event) => selectTerritory(event, territory.id));
-    territoryLayer.append(path);
     labelLayer.append(label);
 
     const merged = {
       ...territory,
       path,
       label,
-      labelPoint: territoryGeometry.label
+      labelPoint
     };
     territories.set(territory.id, merged);
     territoryList.push(merged);
@@ -347,6 +364,67 @@ function drawBonusMarkers(map, geometry, bonusLayer, bonusMarkers) {
   }
 }
 
+function chooseLabelPoint(path, preferred) {
+  try {
+    const box = path.getBBox();
+    if (box.width <= 0 || box.height <= 0) return preferred;
+
+    const edgePoints = samplePath(path);
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const columns = Math.max(8, Math.min(30, Math.ceil(box.width / 7)));
+    const rows = Math.max(8, Math.min(30, Math.ceil(box.height / 7)));
+    let best = null;
+
+    for (let ix = 0; ix < columns; ix += 1) {
+      for (let iy = 0; iy < rows; iy += 1) {
+        const candidate = {
+          x: box.x + (ix + 0.5) * box.width / columns,
+          y: box.y + (iy + 0.5) * box.height / rows
+        };
+        if (!path.isPointInFill(new DOMPoint(candidate.x, candidate.y))) continue;
+        const clearance = distanceToNearest(candidate, edgePoints);
+        const centerDistance = distance(candidate, center);
+        const preferredDistance = distance(candidate, preferred);
+        const score = clearance * 2.4 - centerDistance * 0.05 - preferredDistance * 0.01;
+        if (!best || score > best.score) best = { ...candidate, score };
+      }
+    }
+
+    if (!best) return preferred;
+    return { x: roundCoord(best.x), y: roundCoord(best.y) };
+  } catch {
+    return preferred;
+  }
+}
+
+function samplePath(path) {
+  const length = path.getTotalLength();
+  const samples = Math.max(48, Math.min(180, Math.ceil(length / 5)));
+  const points = [];
+  for (let index = 0; index <= samples; index += 1) {
+    const point = path.getPointAtLength(length * index / samples);
+    points.push({ x: point.x, y: point.y });
+  }
+  return points;
+}
+
+function distanceToNearest(point, others) {
+  let nearest = Infinity;
+  for (const other of others) {
+    const value = distance(point, other);
+    if (value < nearest) nearest = value;
+  }
+  return nearest;
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function roundCoord(value) {
+  return Math.round(value * 1000) / 1000;
+}
+
 function selectTerritory(event, territoryId) {
   event.stopPropagation();
   selectedTerritoryId = territoryId;
@@ -388,6 +466,7 @@ function renderSelectionOverlay() {
 }
 
 function visibleTerritories(frame) {
+  if (isDistributionFrame(frame)) return null;
   if (els.perspective.value === "all") return null;
   const playerId = Number(els.perspective.value);
   const visible = new Set();
@@ -397,6 +476,27 @@ function visibleTerritories(frame) {
     for (const neighborId of replay.map.adjacency[territoryId] ?? []) visible.add(neighborId);
   }
   return visible;
+}
+
+function distributionRenderState(frame) {
+  if (!isDistributionFrame(frame)) return null;
+  const perspective = els.perspective.value;
+  const picksByTerritory = new Map();
+  const revealedEvents = frame.events.slice(0, frame.revealedEventCount ?? frame.events.length);
+  for (const event of revealedEvents) {
+    if (event.type !== "pick") continue;
+    if (perspective !== "all" && event.playerId !== Number(perspective)) continue;
+    picksByTerritory.set(event.territoryId, event);
+  }
+  return {
+    availablePicks: new Set(replay.setup.availablePicks),
+    wastelands: new Set(replay.setup.wastelands),
+    picksByTerritory
+  };
+}
+
+function isDistributionFrame(frame) {
+  return frame.phase === "distribution" || frame.phase === "pick";
 }
 
 function renderScores(frame) {
@@ -410,7 +510,7 @@ function renderScores(frame) {
   }
   els.scoreGrid.innerHTML = [0, 1].map((playerId) => `
     <div class="score">
-      <strong>${escapeHtml(replay.players[playerId])}</strong>
+      <strong><span class="player-swatch" style="--player-color: ${COLORS.player[playerId].fill}"></span>${escapeHtml(replay.players[playerId])}</strong>
       <dl>
         <dt>Income</dt><dd>${frame.incomes[playerId].total}</dd>
         <dt>Territories</dt><dd>${counts[playerId]}</dd>
@@ -423,12 +523,13 @@ function renderScores(frame) {
 
 function renderEvents(frame) {
   if (!frame.events.length) {
-    els.eventLog.innerHTML = "<li>No executed orders in this frame.</li>";
+    els.eventLog.innerHTML = `<li>${isDistributionFrame(frame) ? "No picks shown in this frame." : "No executed orders in this frame."}</li>`;
     return;
   }
   els.eventLog.innerHTML = frame.events.map((event, index) => `
-    <li class="${index === frame.currentEventIndex ? "current-order" : ""}">
-      ${escapeHtml(describeEvent(event))}
+    <li class="order-row ${index === frame.currentEventIndex ? "current-order" : ""}" style="--order-color: ${orderColor(event)}">
+      <span class="order-icon ${orderIconClass(event)}" aria-hidden="true"></span>
+      <span class="order-text">${escapeHtml(describeEvent(event))}</span>
     </li>
   `).join("");
   els.eventLog.querySelector(".current-order")?.scrollIntoView({ block: "nearest" });
@@ -466,17 +567,36 @@ function renderResult(summary) {
 
 function describeEvent(event) {
   const player = replay.players[event.playerId] ?? `P${event.playerId}`;
+  if (event.type === "pick") {
+    return `${name(event.territoryId)}`;
+  }
   if (event.type === "deploy") {
-    return `${player} deployed ${event.armies} to ${name(event.territoryId)}${event.fallback ? " (fallback)" : ""}.`;
+    return `Deploy ${event.armies} to ${name(event.territoryId)}${event.fallback ? " (fallback)" : ""}`;
   }
   if (event.type === "transfer") {
-    return `${player} transferred ${event.armies} from ${name(event.from)} to ${name(event.to)}.`;
+    return `${formatArmies(event.armies)} transferred to ${name(event.to)} from ${name(event.from)}`;
   }
   if (event.type === "attack") {
-    const captureText = event.captured ? `captured ${name(event.to)}` : `hit ${name(event.to)}`;
-    return `${player} attacked from ${name(event.from)} with ${event.armies}, killed ${event.killedDefenders}, lost ${event.killedAttackers}, and ${captureText}.`;
+    if (event.captured) {
+      return `${formatArmies(event.remainingAttackers)} captured ${name(event.to)} from ${name(event.from)}`;
+    }
+    return `${formatArmies(event.armies)} failed to take ${name(event.to)} from ${name(event.from)}`;
   }
-  return event.type;
+  return player ? `${player}: ${event.type}` : event.type;
+}
+
+function orderColor(event) {
+  return COLORS.player[event.playerId]?.fill ?? COLORS.neutral;
+}
+
+function orderIconClass(event) {
+  if (event.type === "deploy" || event.type === "pick") return event.type;
+  return "move";
+}
+
+function formatArmies(value) {
+  const armies = Number(value);
+  return `${armies} ${armies === 1 ? "army" : "armies"}`;
 }
 
 function name(territoryId) {
@@ -508,7 +628,10 @@ function stopPlayback() {
 function findTurnStep(direction) {
   if (!replay) return 0;
   const currentFrame = replay.frames[frameIndex];
-  if (direction > 0 && currentFrame.phase === "initial") return Math.min(1, replay.frames.length - 1);
+  if (direction > 0 && isSetupFrame(currentFrame)) {
+    const firstTurnFrame = replay.frames.findIndex((frame) => !isSetupFrame(frame));
+    return firstTurnFrame === -1 ? replay.frames.length - 1 : firstTurnFrame;
+  }
   const currentTurn = currentFrame.turn;
   const targetTurns = replay.frames
     .filter((frame) => frame.phase !== "initial")
@@ -523,6 +646,10 @@ function findTurnStep(direction) {
 function lastTurnNumber() {
   if (!replay?.frames.length) return 0;
   return Math.max(...replay.frames.map((frame) => frame.turn));
+}
+
+function isSetupFrame(frame) {
+  return isDistributionFrame(frame) || frame.phase === "initial";
 }
 
 function setBusy(busy) {

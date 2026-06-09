@@ -36,26 +36,35 @@ export function createDraft(seed = 1, map = MEDIUM_EARTH_MAP) {
 export function allocatePicks(draft, pickOrders, map = MEDIUM_EARTH_MAP) {
   const available = new Set(draft.availablePicks);
   const assigned = [[], []];
+  const allocationSteps = [];
   const remaining = new Set(draft.availablePicks);
   const rng = new SeededRandom(`${draft.seed}:pick-fallback`);
 
   for (let round = 0; round < RULES.startsPerPlayer; round += 1) {
     const order = round % 2 === 0
-      ? [draft.firstPicker, 1 - draft.firstPicker]
-      : [1 - draft.firstPicker, draft.firstPicker];
+        ? [draft.firstPicker, 1 - draft.firstPicker]
+        : [1 - draft.firstPicker, draft.firstPicker];
     for (const playerId of order) {
       const choice = firstAvailablePick(pickOrders[playerId] ?? [], available, remaining);
-      const territoryId = choice ?? rng.pick([...remaining]);
+      const territoryId = choice?.territoryId ?? rng.pick([...remaining]);
       if (!territoryId) throw new Error("Not enough distribution territories to allocate starts.");
       assigned[playerId].push(territoryId);
       remaining.delete(territoryId);
+      allocationSteps.push({
+        round: round + 1,
+        playerId,
+        territoryId,
+        pickPriority: choice?.priority ?? null,
+        fallback: !choice
+      });
     }
   }
 
   return {
     starts: assigned,
     firstMovePlayer: 1 - draft.firstPicker,
-    allocationOrder: buildAllocationOrder(draft.firstPicker)
+    allocationOrder: buildAllocationOrder(draft.firstPicker),
+    allocationSteps
   };
 }
 
@@ -102,10 +111,14 @@ export class WarGame {
         distribution: draft.distribution,
         availablePicks: draft.availablePicks,
         wastelands: draft.wastelands,
+        submittedPicks: pickOrders,
         firstPicker: draft.firstPicker,
         allocation: this.allocation
       },
-      frames: [this.#frame("initial", [], [])],
+      frames: [
+        ...this.#distributionFrames(pickOrders),
+        this.#frame("initial", [], [])
+      ],
       result: null
     };
   }
@@ -375,6 +388,52 @@ export class WarGame {
     this.result = result;
   }
 
+  #distributionFrames(pickOrders) {
+    const events = [];
+    for (let priority = 0; priority < RULES.picksPerPlayer; priority += 1) {
+      for (let playerId = 0; playerId < 2; playerId += 1) {
+        const territoryId = pickOrders[playerId]?.[priority];
+        if (!territoryId) continue;
+        events.push({
+          type: "pick",
+          playerId,
+          territoryId,
+          priority: priority + 1
+        });
+      }
+    }
+    const frames = [this.#setupFrame("distribution", events, null, 0)];
+    for (let index = 0; index < events.length; index += 1) {
+      frames.push(this.#setupFrame("pick", events, index, index + 1));
+    }
+    return frames;
+  }
+
+  #setupFrame(phase, events, currentEventIndex, revealedEventCount = events.length) {
+    return {
+      turn: 0,
+      phase,
+      firstMovePlayer: this.firstMovePlayer,
+      incomes: [setupIncome(), setupIncome()],
+      orders: [],
+      events,
+      revealedEventCount,
+      currentEventIndex,
+      territories: this.#distributionTerritories()
+    };
+  }
+
+  #distributionTerritories() {
+    const wastelandSet = new Set(this.draft.wastelands);
+    const distributionSet = new Set(this.draft.distribution);
+    return Object.fromEntries(this.map.territories.map((territory) => {
+      const armies = wastelandSet.has(territory.id)
+        ? RULES.wastelandArmies
+        : (distributionSet.has(territory.id) ? RULES.distributionNeutralArmies : RULES.neutralArmies);
+      return [territory.id, { owner: null, armies }];
+    }));
+  }
+
   #frame(phase, orders, events, currentEventIndex = null) {
     return {
       turn: this.turn,
@@ -395,10 +454,17 @@ export class WarGame {
 }
 
 function firstAvailablePick(picks, available, remaining) {
-  for (const territoryId of picks) {
-    if (available.has(territoryId) && remaining.has(territoryId)) return territoryId;
+  for (let index = 0; index < picks.length; index += 1) {
+    const territoryId = picks[index];
+    if (available.has(territoryId) && remaining.has(territoryId)) {
+      return { territoryId, priority: index + 1 };
+    }
   }
   return null;
+}
+
+function setupIncome() {
+  return { total: 0, base: 0, completedBonuses: [] };
 }
 
 function buildAllocationOrder(firstPicker) {
