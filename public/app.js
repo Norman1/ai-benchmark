@@ -134,11 +134,6 @@ function renderFrame() {
   const map = replay.map;
   const setup = replay.setup;
   const wastelands = new Set(setup.wastelands);
-  const distribution = new Set(setup.distribution);
-  const starts = new Map();
-  setup.allocation.starts.forEach((playerStarts, playerId) => {
-    playerStarts.forEach((territoryId) => starts.set(territoryId, playerId));
-  });
 
   const territoryById = new Map(map.territories.map((territory) => [territory.id, territory]));
   const eventEdges = frame.events
@@ -151,15 +146,21 @@ function renderFrame() {
     })
     .join("");
 
+  const ownerPatches = map.territories.map((territory) => {
+    const state = frame.territories[territory.id];
+    if (state.owner !== 0 && state.owner !== 1) return "";
+    const rx = territory.bonusId === "zero" ? 18 : 28;
+    const ry = territory.bonusId === "zero" ? 14 : 22;
+    return `<ellipse class="owner-patch p${state.owner}" cx="${territory.x}" cy="${territory.y}" rx="${rx}" ry="${ry}"></ellipse>`;
+  }).join("");
+
   const markers = map.territories.map((territory) => {
     const state = frame.territories[territory.id];
     const ownerClass = state.owner === 0 ? "p0" : state.owner === 1 ? "p1" : "neutral";
     const classes = [
       "marker",
       ownerClass,
-      wastelands.has(territory.id) ? "wasteland" : "",
-      distribution.has(territory.id) ? "distribution" : "",
-      starts.has(territory.id) ? "start" : "",
+      wastelands.has(territory.id) && state.owner === null ? "wasteland" : "",
       selectedTerritoryId === territory.id ? "selected" : ""
     ].filter(Boolean).join(" ");
     const radius = Math.max(13, Math.min(24, 11 + Math.sqrt(state.armies) * 2.2));
@@ -174,6 +175,7 @@ function renderFrame() {
   els.board.innerHTML = `
     <rect class="sea" x="0" y="0" width="${mapPayload.map.viewBox.width}" height="${mapPayload.map.viewBox.height}"></rect>
     <image class="map-image" href="${mapPayload.rules.mapImage}" x="0" y="0" width="${mapPayload.map.viewBox.width}" height="${mapPayload.map.viewBox.height}" preserveAspectRatio="none"></image>
+    ${ownerPatches}
     ${eventEdges}
     ${markers}
   `;

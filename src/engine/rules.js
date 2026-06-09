@@ -13,7 +13,7 @@ export const RULES = Object.freeze({
   maxTurns: 120,
   botTimeLimitMs: 350,
   maxBotLineLength: 1024 * 1024,
-  mapImage: "/assets/medium-earth-reference.png"
+  mapImage: "/assets/medium-earth-clean.png"
 });
 
 export function straightRound(value) {
