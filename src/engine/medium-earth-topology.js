@@ -256,6 +256,7 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "value": 6,
       "color": "#1db300",
       "territories": [
+        "t30",
         "t55",
         "t68",
         "t79",
@@ -350,7 +351,6 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "value": 0,
       "color": "#9c9c9c",
       "territories": [
-        "t30",
         "t60"
       ]
     }
@@ -684,13 +684,13 @@ export const MEDIUM_EARTH_TOPOLOGY = {
       "id": "t30",
       "numericId": 30,
       "name": "Korea 30",
-      "bonusId": "korea",
-      "bonusName": "Korea",
-      "bonusValue": 0,
+      "bonusId": "west_china",
+      "bonusName": "West China",
+      "bonusValue": 6,
       "x": 837.388,
       "y": 119.52,
-      "color": "#9c9c9c",
-      "zeroBonus": true
+      "color": "#1db300",
+      "zeroBonus": false
     },
     {
       "id": "t31",

@@ -62,6 +62,19 @@ test("east africa 148 does not connect directly to middle east 53", () => {
   assert.ok(!MEDIUM_EARTH_MAP.adjacency.t53.includes("t148"));
 });
 
+test("korea 30 belongs to west china", () => {
+  const bonusById = new Map(MEDIUM_EARTH_MAP.bonuses.map((bonus) => [bonus.id, bonus]));
+  const territory = MEDIUM_EARTH_MAP.territories.find((candidate) => candidate.id === "t30");
+  assert.ok(territory);
+  assert.equal(territory.name, "Korea 30");
+  assert.equal(territory.bonusId, "west_china");
+  assert.equal(territory.bonusName, "West China");
+  assert.equal(territory.bonusValue, 6);
+  assert.equal(territory.zeroBonus, false);
+  assert.ok(bonusById.get("west_china").territories.includes("t30"));
+  assert.ok(!bonusById.get("korea").territories.includes("t30"));
+});
+
 test("official geometry covers every engine territory", async () => {
   const geometry = JSON.parse(await readFile(new URL("../public/assets/medium-earth-geometry.json", import.meta.url), "utf8"));
   const geometryIds = new Set(geometry.territories.map((territory) => territory.id));
